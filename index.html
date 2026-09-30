@@ -1,0 +1,712 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>MonEsti44 · Estimation immobilière gratuite en Loire-Atlantique</title>
+<meta name="description" content="Estimez gratuitement votre maison ou votre appartement en Loire-Atlantique, à partir des ventes réelles enregistrées à moins de 500 m de chez vous. Prix net vendeur, résultat en moins de 5 minutes.">
+<meta property="og:title" content="MonEsti44 · Combien vaut votre bien dans le 44 ?">
+<meta property="og:description" content="Estimation gratuite calculée sur les ventes réelles à 500 m de chez vous. Résultat en moins de 5 minutes.">
+<meta property="og:image" content="assets/photo-profil-1080.png">
+<meta name="theme-color" content="#0F2A44">
+<link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700;800&family=Figtree:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<style>
+/* Mise en page : en-tête fixe, hero en deux colonnes (argumentaire + formulaire), sections d'information, puis écrans d'analyse et de résultat qui remplacent le formulaire */
+:root{
+  --navy:#0F2A44; --navy-2:#173A5C; --ink:#14212E; --muted:#556575; --line:#DCE3EA;
+  --bg:#F3F6F9; --card:#FFFFFF; --gold:#D9A62B; --gold-deep:#A87A12; --gold-soft:#FBF1D9;
+  --loire:#2E6DA4; --loire-soft:#E4EEF7; --ok:#1E7A4F; --err:#B3261E;
+  --display:"Sora", "Segoe UI", system-ui, sans-serif; --body:"Figtree", "Segoe UI", system-ui, -apple-system, sans-serif;
+  --r:18px; color-scheme:light;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth;scroll-padding-top:80px}
+body{margin:0;background:var(--bg);color:var(--ink);font:17px/1.6 var(--body);-webkit-font-smoothing:antialiased}
+img,svg{max-width:100%}
+a{color:var(--loire)}
+h1,h2,h3{font-family:var(--display);line-height:1.12;margin:0;text-wrap:balance;letter-spacing:-.01em}
+h1{font-size:clamp(34px,5.2vw,56px);font-weight:800}
+h2{font-size:clamp(26px,3.4vw,38px);font-weight:700}
+h3{font-size:19px;font-weight:700}
+p{margin:0}
+.wrap{max-width:1180px;margin:0 auto;padding-inline:20px}
+.eyebrow{font:700 12.5px var(--display);letter-spacing:.14em;text-transform:uppercase;color:var(--gold-deep)}
+/* en-tête */
+header.top{position:sticky;top:0;z-index:50;background:rgba(255,255,255,.94);backdrop-filter:blur(8px);border-bottom:1px solid var(--line);padding-top:env(safe-area-inset-top,0px)}
+header.top .wrap{display:flex;align-items:center;justify-content:space-between;gap:16px;height:68px}
+header.top img{height:42px;width:auto;display:block}
+nav{display:flex;gap:22px;align-items:center}
+nav a{color:var(--ink);text-decoration:none;font-weight:600;font-size:15px}
+nav a.cta{background:var(--navy);color:#fff;padding:10px 18px;border-radius:999px}
+@media (max-width:860px){nav a:not(.cta){display:none}}
+nav a.cta{white-space:nowrap}
+@media (max-width:420px){header.top img{height:34px}nav a.cta{padding:9px 14px;font-size:14px}}
+/* hero */
+.hero{background:radial-gradient(1200px 500px at 85% -10%,#1F4C78 0%,transparent 60%),linear-gradient(180deg,var(--navy) 0%,#12324F 100%);color:#fff;padding-block:56px 72px;position:relative;overflow:hidden}
+.hero .grid.focus{grid-template-columns:minmax(0,1fr);max-width:900px}
+.hero .grid.focus>div:first-child{display:none}
+#app,#app>div,.result>*{min-width:0}
+.hero .grid{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,.95fr);grid-template-areas:"intro app" "outro app";grid-template-rows:auto 1fr;column-gap:48px;row-gap:0;align-items:start}
+.intro{grid-area:intro}.outro{grid-area:outro}#app{grid-area:app}
+.intro h1{margin-top:12px}
+.hero .grid.focus{grid-template-areas:"app"}
+.hero .grid.focus>.intro,.hero .grid.focus>.outro{display:none}
+fieldset{border:0;margin:0;padding:0;min-width:0;display:grid;gap:14px}
+legend{padding:0;margin-bottom:2px}
+.whead{display:flex;align-items:center;gap:10px;min-height:32px}
+.stepno{font-weight:700;font-size:14px;color:var(--muted)}
+.whead .chrono{margin:0 0 0 auto}
+.back{display:inline-flex;align-items:center;gap:4px;border:0;background:none;color:var(--navy);font:700 15px var(--body);padding:6px 8px 6px 0;cursor:pointer}
+.wbar{height:6px;background:#E8EDF2;border-radius:6px;overflow:hidden;margin:10px 0 18px}
+.wbar i{display:block;height:100%;width:25%;background:var(--gold);border-radius:6px;transition:width .3s}
+.unit{position:relative}
+.unit span{position:absolute;right:14px;top:50%;transform:translateY(-50%);color:var(--muted);font-weight:700;pointer-events:none}
+.unit input{padding-right:48px}
+.sticky{position:fixed;left:0;right:0;bottom:0;z-index:60;display:flex;align-items:center;justify-content:center;gap:8px;background:var(--gold);color:#1C1403;font:700 17px var(--display);text-decoration:none;padding:16px 16px calc(16px + env(safe-area-inset-bottom,0px));box-shadow:0 -8px 24px rgba(4,18,33,.18)}
+@media (min-width:961px){.sticky{display:none!important}}
+.salecards{display:none;gap:10px}
+.sale{border:1px solid var(--line);border-radius:14px;padding:12px 14px;display:grid;gap:2px}
+.sale.old{background:#F6F8FA}
+.sale .l1{display:flex;justify-content:space-between;gap:8px;font-size:13px;color:var(--muted)}
+.sale .l2{display:flex;justify-content:space-between;gap:8px;align-items:baseline}
+.sale .l2 b{font:700 19px var(--display);font-variant-numeric:tabular-nums}
+.sale .l2 span{font-size:14px;color:var(--muted);font-variant-numeric:tabular-nums}
+.sale .l3{font-size:14px}
+.call{display:flex;margin-top:14px}
+@media (max-width:960px){
+  .hero{padding-block:18px 30px}
+  .hero .grid{grid-template-columns:minmax(0,1fr);grid-template-areas:"intro" "app" "outro";grid-template-rows:auto;row-gap:18px}
+  .radar{display:none}
+  .intro h1{font-size:clamp(28px,8vw,40px);margin-top:6px}
+  .hero .lead{font-size:16px;margin-top:8px}
+  .dk{display:none}
+  .outro .proofs{margin-top:6px}
+}
+@media (max-width:640px){
+  body{font-size:16px}
+  .wrap{padding-inline:14px}
+  .formcard{padding:18px 16px 20px}
+  .formcard h2{font-size:22px}
+  .card{border-radius:18px}
+  .motifs label{min-height:58px;font-size:16px;padding:12px 14px}
+  .seg label{padding:15px 10px;font-size:16px}
+  .chips{gap:8px}
+  .chips label{padding:10px 15px;font-size:15px}
+  input[type=text],input[type=email],input[type=tel],input[type=number]{padding:14px;font-size:16px}
+  .btn{padding:17px 18px}
+  .two{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+  .analyse,.result{padding:18px 16px}
+  .mapbox{height:210px}
+  .steps li{font-size:14px}
+  .steps li small{display:none}
+  .steps li.on small{display:block}
+  .tbl{display:none}
+  .salecards{display:grid}
+  .price{padding:18px}
+  .kpis{gap:8px}
+  .kpi{padding:10px}
+  section.s{padding-block:52px}
+  .head{margin-bottom:24px}
+  .head p{font-size:16px}
+  footer{padding-bottom:calc(90px + env(safe-area-inset-bottom,0px))}
+}
+@media (prefers-reduced-motion:reduce){.wbar i{transition:none}}
+.hero h1 em{font-style:normal;color:var(--gold)}
+.hero .lead{font-size:19px;color:#D5DFEA;margin-top:18px;max-width:54ch}
+.proofs{display:grid;gap:12px;margin-top:28px}
+.outro{padding-top:0}
+.proof{display:flex;gap:12px;align-items:flex-start;color:#E6EDF4}
+.proof svg{flex:none;margin-top:3px}
+.stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-top:32px}
+.stat{border:1px solid rgba(255,255,255,.16);border-radius:14px;padding:14px 16px;background:rgba(255,255,255,.04)}
+.stat b{display:block;font:700 24px var(--display);color:#fff;font-variant-numeric:tabular-nums}
+.stat span{font-size:13.5px;color:#B9C8D8}
+@media (max-width:520px){.stats{grid-template-columns:minmax(0,1fr)}}
+.radar{position:absolute;right:-160px;bottom:-220px;width:560px;opacity:.12;pointer-events:none}
+/* carte formulaire */
+.card{background:var(--card);border-radius:22px;box-shadow:0 24px 60px rgba(4,18,33,.28);color:var(--ink)}
+#app{position:relative;z-index:2;scroll-margin-top:90px}
+.formcard{padding:26px 26px 22px}
+.formcard h2{font-size:24px}
+.formcard .sub{color:var(--muted);font-size:15px;margin-top:6px}
+.chrono{display:inline-flex;align-items:center;gap:6px;background:var(--gold-soft);color:var(--gold-deep);font-weight:700;font-size:13px;border-radius:999px;padding:4px 10px;margin-bottom:10px}
+form{display:grid;gap:14px;margin-top:18px}
+.two{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+@media (max-width:460px){.two{grid-template-columns:minmax(0,1fr)}}
+.fld{display:grid;gap:6px;min-width:0;position:relative}
+.fld>label,.lbl{font-weight:700;font-size:14px}
+.req{color:var(--gold-deep)}
+input[type=text],input[type=email],input[type=tel],input[type=number],select{font:500 16px var(--body);color:var(--ink);background:#F8FAFC;border:1.5px solid var(--line);border-radius:12px;padding:12px 13px;width:100%;min-width:0}
+input:focus,select:focus{outline:none;border-color:var(--loire);box-shadow:0 0 0 3px var(--loire-soft);background:#fff}
+input.bad,select.bad{border-color:var(--err)}
+.seg{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.seg input{position:absolute;opacity:0;pointer-events:none}
+.seg label{display:flex;align-items:center;justify-content:center;gap:8px;border:1.5px solid var(--line);border-radius:12px;padding:12px;font-weight:700;cursor:pointer;background:#F8FAFC}
+.seg input:checked+label{border-color:var(--navy);background:var(--navy);color:#fff}
+.seg input:focus-visible+label{box-shadow:0 0 0 3px var(--loire-soft)}
+.motifs{display:grid;gap:8px}
+.motifs input{position:absolute;opacity:0;pointer-events:none}
+.motifs label{display:flex;align-items:center;gap:10px;border:1.5px solid var(--line);border-radius:12px;padding:11px 13px;font-weight:600;font-size:15px;cursor:pointer;background:#F8FAFC}
+.motifs label::before{content:"";width:18px;height:18px;border-radius:50%;border:2px solid #AAB6C2;flex:none;box-sizing:border-box}
+.motifs input:checked+label{border-color:var(--navy);background:var(--loire-soft)}
+.motifs input:checked+label::before{border:6px solid var(--navy)}
+.motifs input:focus-visible+label{box-shadow:0 0 0 3px var(--loire-soft)}
+.motifs.bad label{border-color:var(--err)}
+.partner{font-size:12.5px;color:var(--muted);margin-top:-6px}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chips input{position:absolute;opacity:0;pointer-events:none}
+.chips label{border:1.5px solid var(--line);border-radius:999px;padding:7px 13px;font-weight:700;font-size:14px;cursor:pointer;background:#F8FAFC}
+.chips input:checked+label{border-color:var(--gold);background:var(--gold-soft);color:var(--gold-deep)}
+.chips input:focus-visible+label{box-shadow:0 0 0 3px var(--loire-soft)}
+.suggest{position:absolute;top:100%;left:0;right:0;z-index:20;background:#fff;border:1px solid var(--line);border-radius:12px;box-shadow:0 14px 30px rgba(0,0,0,.12);margin-top:4px;overflow:hidden}
+.suggest button{display:block;width:100%;text-align:left;border:0;background:#fff;padding:10px 13px;font:500 15px var(--body);cursor:pointer;color:var(--ink)}
+.suggest button:hover,.suggest button.act{background:var(--loire-soft)}
+.suggest small{color:var(--muted)}
+.consent{display:flex;gap:10px;align-items:flex-start;font-size:14px;color:var(--muted);background:#F8FAFC;border:1.5px solid var(--line);border-radius:12px;padding:12px}
+.consent input{width:20px;height:20px;flex:none;margin-top:1px;accent-color:var(--navy)}
+.consent.bad{border-color:var(--err)}
+.msg{color:var(--err);font-size:14px;font-weight:600;min-height:0}
+.btn{font:700 17px var(--display);border:0;border-radius:14px;padding:16px 20px;background:var(--gold);color:#1C1403;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:10px;text-decoration:none}
+.btn:hover{filter:brightness(1.05)}
+.btn:focus-visible{outline:3px solid var(--navy);outline-offset:2px}
+.btn.full{width:100%}
+.btn.ghost{background:transparent;border:1.5px solid var(--line);color:var(--ink)}
+.fine{font-size:12.5px;color:var(--muted);text-align:center}
+.hp{position:absolute;left:-5000px;width:1px;height:1px;overflow:hidden}
+/* analyse */
+.analyse{padding:26px}
+.analyse h2{font-size:22px}
+.bar{height:10px;background:#E8EDF2;border-radius:10px;overflow:hidden;margin:16px 0 6px}
+.bar i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--gold),#F0C75E);border-radius:10px;transition:width .4s linear}
+.eta{display:flex;justify-content:space-between;font-size:14px;color:var(--muted);font-variant-numeric:tabular-nums}
+.steps{list-style:none;margin:16px 0 0;padding:0;display:grid;gap:9px}
+.steps li{display:grid;grid-template-columns:24px minmax(0,1fr);gap:10px;align-items:start;font-size:15px;color:#9AA7B4}
+.steps li .ic{width:22px;height:22px;border-radius:50%;border:2px solid #CBD5DF;display:grid;place-items:center;margin-top:1px}
+.steps li.on{color:var(--ink);font-weight:600}
+.steps li.on .ic{border-color:var(--gold);border-top-color:transparent;animation:spin .9s linear infinite}
+.steps li.ok{color:var(--ink)}
+.steps li.ok .ic{border-color:var(--ok);background:var(--ok)}
+.steps li.ok .ic::after{content:"";width:8px;height:4px;border-left:2px solid #fff;border-bottom:2px solid #fff;transform:rotate(-45deg) translate(1px,-1px)}
+.steps li small{display:block;font-weight:500;color:var(--muted)}
+@keyframes spin{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.steps li.on .ic{animation:none}.bar i{transition:none}html{scroll-behavior:auto}}
+.mapbox{height:260px;border-radius:14px;overflow:hidden;margin-top:16px;border:1px solid var(--line);background:#E9EEF2}
+.counter{display:flex;gap:18px;flex-wrap:wrap;margin-top:12px;font-size:14px;color:var(--muted)}
+.counter b{font:700 20px var(--display);color:var(--ink);font-variant-numeric:tabular-nums;margin-right:4px}
+.tipbox{margin-top:16px;background:var(--loire-soft);border-radius:14px;padding:14px 16px;font-size:15px;min-height:92px}
+.tipbox b{display:block;color:var(--loire);font-family:var(--display);font-size:13px;letter-spacing:.08em;text-transform:uppercase;margin-bottom:4px}
+/* résultat */
+.result{padding:26px;display:grid;gap:18px}
+.addr{color:var(--muted);font-size:15px}
+.price{background:linear-gradient(135deg,var(--navy),var(--navy-2));color:#fff;border-radius:18px;padding:22px}
+.price .lab{font-size:13px;letter-spacing:.1em;text-transform:uppercase;color:#C7D4E2;font-weight:700}
+.range{display:flex;align-items:baseline;flex-wrap:wrap;gap:6px 12px;margin-top:6px}
+.range b{font:800 clamp(28px,4.6vw,40px) var(--display);font-variant-numeric:tabular-nums}
+.range span{color:#C7D4E2;font-weight:600}
+.scale{position:relative;height:12px;border-radius:12px;background:linear-gradient(90deg,#5E86AE,var(--gold),#5E86AE);margin:18px 0 8px}
+.scale i{position:absolute;top:50%;left:50%;width:22px;height:22px;border-radius:50%;background:#fff;border:4px solid var(--gold);transform:translate(-50%,-50%)}
+.scale-l{display:flex;justify-content:space-between;font-size:13px;color:#C7D4E2;font-variant-numeric:tabular-nums}
+.central{margin-top:12px;font-size:15px;color:#E4EBF2}
+.central strong{color:var(--gold);font-family:var(--display)}
+.kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+@media (max-width:560px){.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.kpi{border:1px solid var(--line);border-radius:14px;padding:12px}
+.kpi b{display:block;font:700 19px var(--display);font-variant-numeric:tabular-nums}
+.kpi span{font-size:12.5px;color:var(--muted)}
+.conf{display:inline-block;font-size:12px;font-weight:700;border-radius:999px;padding:2px 9px;background:var(--gold-soft);color:var(--gold-deep)}
+.tbl{overflow-x:auto;border:1px solid var(--line);border-radius:14px}
+table{border-collapse:collapse;width:100%;font-size:14px;min-width:620px}
+th,td{padding:9px 11px;text-align:left;border-bottom:1px solid var(--line);white-space:nowrap}
+th{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);background:#F8FAFC}
+td.n{text-align:right;font-variant-numeric:tabular-nums}
+tr:last-child td{border-bottom:0}
+tr.old td{color:var(--muted)}
+.next{border:2px solid var(--gold);background:var(--gold-soft);border-radius:16px;padding:18px}
+.next h3{color:var(--navy)}
+.next ul{margin:10px 0 0;padding-left:20px;display:grid;gap:4px}
+.note{font-size:13.5px;color:var(--muted)}
+/* sections */
+section.s{padding-block:76px}
+section.s.alt{background:#fff}
+.head{max-width:720px;display:grid;gap:12px;margin-bottom:36px}
+.head p{color:var(--muted);font-size:18px}
+.steps3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px}
+@media (max-width:860px){.steps3{grid-template-columns:minmax(0,1fr)}}
+.step{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:22px;display:grid;gap:10px;align-content:start}
+.num{width:38px;height:38px;border-radius:50%;background:var(--navy);color:#fff;display:grid;place-items:center;font:700 17px var(--display)}
+.step .t{font-size:13px;font-weight:700;color:var(--gold-deep)}
+.step p{color:var(--muted)}
+.method{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:40px;align-items:center}
+@media (max-width:860px){.method{grid-template-columns:minmax(0,1fr)}}
+.mlist{display:grid;gap:16px}
+.mitem{display:grid;grid-template-columns:44px minmax(0,1fr);gap:14px}
+.mitem .ic{width:44px;height:44px;border-radius:12px;background:var(--loire-soft);display:grid;place-items:center;color:var(--loire)}
+.mitem p{color:var(--muted);font-size:16px}
+.fai{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin-top:8px}
+@media (max-width:560px){.fai{grid-template-columns:minmax(0,1fr)}}
+.fai div{border-radius:14px;padding:16px;border:1px solid var(--line);background:#fff}
+.fai div.good{border:2px solid var(--gold);background:var(--gold-soft)}
+.fai b{font-family:var(--display)}
+.why{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
+@media (max-width:860px){.why{grid-template-columns:minmax(0,1fr)}}
+.why div{background:var(--bg);border-radius:var(--r);padding:20px;display:grid;gap:8px;align-content:start}
+.why p{color:var(--muted);font-size:16px}
+.band{background:var(--navy);color:#fff;border-radius:24px;padding:34px;display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,.7fr);gap:24px;align-items:center}
+@media (max-width:860px){.band{grid-template-columns:minmax(0,1fr)}}
+.band p{color:#C7D4E2;margin-top:10px}
+.communes{display:flex;flex-wrap:wrap;gap:8px}
+.communes span{background:#fff;border:1px solid var(--line);border-radius:999px;padding:6px 13px;font-size:14px;font-weight:600}
+.faq{display:grid;gap:10px;max-width:860px}
+details{background:#fff;border:1px solid var(--line);border-radius:14px;padding:4px 18px}
+summary{cursor:pointer;font:600 17px var(--display);padding:14px 0;list-style:none;display:flex;justify-content:space-between;gap:12px}
+summary::after{content:"+";font-size:22px;color:var(--gold-deep);line-height:1}
+details[open] summary::after{content:"–"}
+details p{padding-bottom:16px;color:var(--muted)}
+footer{background:#0B1F33;color:#B7C5D4;padding-block:48px 36px;font-size:14.5px}
+footer .cols{display:grid;grid-template-columns:minmax(0,1.2fr) repeat(2,minmax(0,1fr));gap:28px}
+@media (max-width:760px){footer .cols{grid-template-columns:minmax(0,1fr)}}
+footer h3{color:#fff;font-size:15px;margin-bottom:8px}
+footer details{background:transparent;border-color:#23405D;margin-top:10px}
+footer summary{font-size:15px;color:#fff}
+footer details p{color:#B7C5D4;font-size:14px}
+footer img{height:40px;width:auto}
+[hidden]{display:none!important}
+.leaflet-container{font-family:var(--body)}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="wrap">
+    <a href="#" aria-label="MonEsti44, accueil"><img src="assets/logo.svg" alt="MonEsti44" width="330" height="96"></a>
+    <nav aria-label="Navigation principale">
+      <a href="#comment">Comment ça marche</a>
+      <a href="#methode">Notre méthode</a>
+      <a href="#faq">Questions</a>
+      <a href="#app" class="cta">Estimer mon bien</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+<section class="hero">
+  <svg class="radar" viewBox="0 0 400 400" aria-hidden="true"><g fill="none" stroke="#fff" stroke-width="2"><circle cx="200" cy="200" r="60"/><circle cx="200" cy="200" r="120" stroke-dasharray="8 8"/><circle cx="200" cy="200" r="180"/></g><circle cx="200" cy="200" r="14" fill="#D9A62B"/></svg>
+  <div class="wrap grid">
+    <div class="intro">
+      <p class="eyebrow" style="color:var(--gold)">Loire-Atlantique · 44</p>
+      <h1>Combien vaut votre bien, <em>vraiment</em>&nbsp;?</h1>
+      <p class="lead">Estimation gratuite en moins de 5 minutes, calculée sur les ventes réellement signées à moins de 500 m de chez vous.<span class="dk"> Pas sur des annonces : sur des prix de vente.</span></p>
+    </div>
+
+    <div class="card" id="app">
+      <!-- Étape 1 : formulaire en 4 écrans -->
+      <div class="formcard" id="vForm">
+        <div class="whead">
+          <button type="button" class="back" id="back" hidden aria-label="Revenir à l'étape précédente"><svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path d="M19 12H5M11 6l-6 6 6 6" stroke="currentColor" stroke-width="2.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>Retour</button>
+          <span class="stepno" id="stepNo">Étape 1 sur 4</span>
+          <span class="chrono"><svg width="14" height="14" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="13" r="8" fill="none" stroke="currentColor" stroke-width="2.4"/><path d="M12 9v4l3 2M9 2h6" stroke="currentColor" stroke-width="2.4" fill="none" stroke-linecap="round"/></svg>1 min</span>
+        </div>
+        <div class="wbar" aria-hidden="true"><i id="wbar"></i></div>
+        <form id="f" novalidate autocomplete="on">
+          <fieldset class="st" data-s="1">
+            <legend><h2>Pour quel projet&nbsp;?</h2></legend>
+            <p class="sub">Je souhaite faire une estimation pour&nbsp;:</p>
+            <div class="motifs" id="motifs" role="radiogroup" aria-label="Motif de l'estimation">
+              <input type="radio" name="motif" id="mV" value="Un projet de vente"><label for="mV">Un projet de vente</label>
+              <input type="radio" name="motif" id="mI" value="Avoir une idée du prix de mon logement"><label for="mI">Avoir une idée du prix de mon logement</label>
+              <input type="radio" name="motif" id="mR" value="Connaître le prix de vente pour une recherche"><label for="mR">Connaître le prix de vente pour une recherche</label>
+            </div>
+          </fieldset>
+
+          <fieldset class="st" data-s="2" hidden>
+            <legend><h2>Votre bien</h2></legend>
+            <div class="seg" role="radiogroup" aria-label="Type de bien">
+              <input type="radio" name="type" id="tM" value="Maison" checked><label for="tM"><svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z" fill="currentColor"/></svg>Maison</label>
+              <input type="radio" name="type" id="tA" value="Appartement"><label for="tA"><svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 3h14v18h-5v-4h-4v4H5zM8 6v2h2V6zm6 0v2h2V6zM8 10v2h2v-2zm6 0v2h2v-2z" fill="currentColor"/></svg>Appartement</label>
+            </div>
+            <div class="fld">
+              <span class="lbl">Typologie</span>
+              <div class="chips" id="typo" role="radiogroup" aria-label="Nombre de pièces"></div>
+            </div>
+            <div class="fld"><label for="surface">Surface habitable</label><div class="unit"><input type="number" id="surface" inputmode="numeric" min="9" max="1000" placeholder="Ex. 85" enterkeyhint="next"><span>m²</span></div></div>
+            <button class="btn full" type="button" data-next>Continuer<svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6" stroke="currentColor" stroke-width="2.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+          </fieldset>
+
+          <fieldset class="st" data-s="3" hidden>
+            <legend><h2>Où se trouve-t-il&nbsp;?</h2></legend>
+            <p class="sub">Tapez le début de l'adresse puis choisissez-la dans la liste. Loire-Atlantique uniquement.</p>
+            <div class="fld">
+              <label for="adresse">Adresse du bien</label>
+              <input type="text" id="adresse" autocomplete="off" placeholder="Numéro, rue, commune" aria-autocomplete="list" aria-controls="sugg" enterkeyhint="search">
+              <div class="suggest" id="sugg" role="listbox" hidden></div>
+            </div>
+            <button class="btn full" type="button" data-next>Continuer<svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6" stroke="currentColor" stroke-width="2.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+          </fieldset>
+
+          <fieldset class="st" data-s="4" hidden>
+            <legend><h2>Où vous envoyer le résultat&nbsp;?</h2></legend>
+            <div class="two">
+              <div class="fld"><label for="prenom">Prénom</label><input type="text" id="prenom" autocomplete="given-name" enterkeyhint="next"></div>
+              <div class="fld"><label for="nom">Nom</label><input type="text" id="nom" autocomplete="family-name" enterkeyhint="next"></div>
+            </div>
+            <div class="fld"><label for="tel">Téléphone</label><input type="tel" id="tel" inputmode="tel" autocomplete="tel" placeholder="06 12 34 56 78" enterkeyhint="next"></div>
+            <div class="fld"><label for="email">E-mail</label><input type="email" id="email" inputmode="email" autocomplete="email" autocapitalize="off" placeholder="vous@exemple.fr" enterkeyhint="done"></div>
+            <div class="hp" aria-hidden="true"><label for="site">Site</label><input type="text" id="site" tabindex="-1" autocomplete="off"></div>
+            <label class="consent" id="consentBox"><input type="checkbox" id="consent"><span id="consentTxt"></span></label>
+            <p class="partner" id="partnerLine"></p>
+            <button class="btn full" type="submit">Lancer mon estimation<svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6" stroke="currentColor" stroke-width="2.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+            <p class="fine">Gratuit, sans engagement. Vos données ne sont ni vendues ni cédées.</p>
+          </fieldset>
+          <p class="msg" id="msg" role="alert"></p>
+        </form>
+      </div>
+
+      <!-- Étape 2 : analyse -->
+      <div class="analyse" id="vAn" hidden aria-live="polite">
+        <p class="eyebrow">Analyse en cours</p>
+        <h2 id="anTitle" style="margin-top:6px">Nous étudions les ventes autour de chez vous</h2>
+        <div class="bar"><i id="anBar"></i></div>
+        <div class="eta"><span id="anPct">0 %</span><span id="anEta"></span></div>
+        <div class="mapbox" id="anMap"></div>
+        <div class="counter"><span><b id="cV">0</b>ventes repérées</span><span><b id="cC">0</b>comparables retenues</span></div>
+        <ol class="steps" id="anSteps"></ol>
+        <div class="tipbox"><b>Le saviez-vous ?</b><span id="tip"></span></div>
+      </div>
+
+      <!-- Étape 3 : résultat -->
+      <div class="result" id="vRes" hidden></div>
+    </div>
+
+    <div class="outro">
+      <div class="proofs">
+        <div class="proof"><svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="10" fill="#D9A62B"/><path d="M5.5 10.5l3 3 6-7" stroke="#0F2A44" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg><span><b>Données officielles DVF</b> : les ventes enregistrées par l'administration fiscale.</span></div>
+        <div class="proof"><svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="10" fill="#D9A62B"/><path d="M5.5 10.5l3 3 6-7" stroke="#0F2A44" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg><span><b>Prix net vendeur</b> : ce que le vendeur a réellement touché, hors frais d'agence.</span></div>
+        <div class="proof"><svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="10" fill="#D9A62B"/><path d="M5.5 10.5l3 3 6-7" stroke="#0F2A44" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg><span><b>Un expert local ensuite</b> : visite et avis de valeur écrit sous 48 h, si vous le souhaitez.</span></div>
+      </div>
+      <div class="stats" id="stats" hidden>
+        <div class="stat"><b id="stN">–</b><span>ventes analysées dans le 44</span></div>
+        <div class="stat"><b>500 m</b><span>autour de votre adresse</span></div>
+        <div class="stat"><b id="stP">24 mois</b><span id="stPl">de ventes signées</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+<a href="#app" class="sticky" id="sticky" hidden>Estimer mon bien gratuitement<svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6" stroke="currentColor" stroke-width="2.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></a>
+
+<section class="s" id="comment">
+  <div class="wrap">
+    <div class="head"><p class="eyebrow">Comment ça marche</p><h2>Votre prix en moins de 5 minutes, sans vous déplacer</h2><p>Une minute pour décrire votre bien, trois à quatre minutes d'analyse des ventes de votre quartier, et votre fourchette de prix s'affiche.</p></div>
+    <div class="steps3">
+      <div class="step"><div class="num">1</div><span class="t">1 minute</span><h3>Vous décrivez votre bien</h3><p>Maison ou appartement, nombre de pièces, surface et adresse. Rien de plus pour commencer.</p></div>
+      <div class="step"><div class="num">2</div><span class="t">3 à 4 minutes</span><h3>Nous analysons les ventes autour</h3><p>Toutes les ventes signées dans un rayon de 500 m sur les 24 derniers mois disponibles, triées par type, surface et nombre de pièces.</p></div>
+      <div class="step"><div class="num">3</div><span class="t">Tout de suite, puis sous 48 h</span><h3>Vous recevez votre fourchette</h3><p>Prix net vendeur bas, central et haut, avec les ventes de référence. Un professionnel de votre secteur peut ensuite affiner sur place, avec un rendu écrit sous 48 h.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="s alt" id="methode">
+  <div class="wrap method">
+    <div class="mlist">
+      <div class="head" style="margin-bottom:6px"><p class="eyebrow">Notre méthode</p><h2>Des ventes réelles, pas des annonces</h2></div>
+      <div class="mitem"><div class="ic"><svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h16v16H4zM8 9h8M8 13h8M8 17h5" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"/></svg></div><div><h3>Les données DVF de l'État</h3><p>Chaque vente immobilière signée chez le notaire est enregistrée par l'administration fiscale et publiée en données ouvertes. Nous mettons ces ventes à jour chaque mois.</p></div></div>
+      <div class="mitem"><div class="ic"><svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2" fill="none" stroke-dasharray="4 3"/><circle cx="12" cy="12" r="3" fill="currentColor"/></svg></div><div><h3>Un rayon de 500 m</h3><p>Le prix d'un bien dépend d'abord de sa rue et de son quartier. Nous ne gardons que les ventes à moins de 500 m, sur les 24 derniers mois. S'il y en a trop peu, nous ajoutons l'année de référence 2018, puis élargissons le rayon, et nous vous le signalons.</p></div></div>
+      <div class="mitem"><div class="ic"><svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19V9M10 19V5M16 19v-7M22 19H2" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"/></svg></div><div><h3>Des biens comparables</h3><p>Même type de bien, surface et nombre de pièces proches. Les prix extrêmes sont écartés, puis nous calculons le prix médian au m², que nous appliquons à votre surface.</p></div></div>
+      <div class="mitem"><div class="ic"><svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7l6 6 4-4 8 8M21 11v6h-6" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div><h3>Ajusté au marché actuel</h3><p>Les ventes DVF ont quelques mois de retard sur le marché. Dans le contexte actuel de baisse des prix, nous corrigeons le prix médian des deux dernières années de 4 % pour refléter les prix d'aujourd'hui.</p></div></div>
+      <div class="mitem"><div class="ic"><svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12h18M7 8l-4 4 4 4M17 8l4 4-4 4" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div><h3>Une fourchette honnête</h3><p>Plus il y a de ventes comparables, plus la fourchette est serrée : de 6 % à 12 % de part et d'autre de la valeur centrale.</p></div></div>
+    </div>
+    <div>
+      <div class="head" style="margin-bottom:14px"><p class="eyebrow">Net vendeur ou FAI ?</p><h2>Nous parlons toujours en net vendeur</h2><p>Les annonces affichent un prix « FAI », frais d'agence inclus. Les ventes DVF donnent le prix signé chez le notaire, hors honoraires d'agence à la charge de l'acquéreur : c'est ce que le vendeur perçoit.</p></div>
+      <div class="fai">
+        <div class="good"><b>Prix net vendeur</b><p class="note" style="margin-top:6px">Ce que vous touchez. C'est le seul prix que nous affichons et expliquons.</p></div>
+        <div><b>Prix FAI</b><p class="note" style="margin-top:6px">Prix d'annonce, honoraires d'agence compris. Toujours plus élevé que le net vendeur.</p></div>
+      </div>
+      <p class="note" style="margin-top:14px">Les prix des annonces sont des prix demandés, souvent négociés ensuite. Nous ne les utilisons jamais pour estimer.</p>
+    </div>
+  </div>
+</section>
+
+<section class="s">
+  <div class="wrap">
+    <div class="head"><p class="eyebrow">Et ensuite ?</p><h2>Vendre vite, et au bon prix</h2><p>Une estimation en ligne donne un ordre de grandeur. Un professionnel qui visite votre bien voit ce que les chiffres ne voient pas.</p></div>
+    <div class="why">
+      <div><h3>Ce que la visite change</h3><p>État, travaux à prévoir, étage et ascenseur, luminosité, vue, extérieur, stationnement, DPE, charges de copropriété : tout cela peut déplacer le prix de plusieurs pourcents.</p></div>
+      <div><h3>Le bon prix dès le départ</h3><p>Un bien affiché au juste prix se vend souvent en quelques semaines. Un bien surévalué reste en ligne des mois et finit fréquemment vendu sous le prix du marché.</p></div>
+      <div><h3>Toutes les agences à votre service</h3><p>Votre conseiller peut diffuser votre bien auprès des agences partenaires du secteur, pour toucher plus d'acquéreurs, plus vite.</p></div>
+    </div>
+    <div class="band" style="margin-top:34px">
+      <div><h2 style="color:#fff">Un rendez-vous, un rendu écrit sous 48 h</h2><p>Après votre estimation en ligne, un professionnel de l'immobilier de votre secteur vous appelle pour convenir d'une visite. Vous recevez son avis de valeur détaillé sous 48 h. C'est gratuit et sans engagement.</p></div>
+      <div><a class="btn full" href="#app">Estimer mon bien maintenant</a></div>
+    </div>
+  </div>
+</section>
+
+<section class="s alt">
+  <div class="wrap">
+    <div class="head"><p class="eyebrow">Zone couverte</p><h2>Toute la Loire-Atlantique</h2><p>De Nantes à la côte, dans les 207 communes du département.</p></div>
+    <div class="communes" id="communes"></div>
+  </div>
+</section>
+
+<section class="s" id="faq">
+  <div class="wrap">
+    <div class="head"><p class="eyebrow">Questions fréquentes</p><h2>Vous vous demandez peut-être</h2></div>
+    <div class="faq">
+      <details><summary>L'estimation est-elle vraiment gratuite ?</summary><p>Oui. L'estimation en ligne est gratuite, tout comme le rendez-vous avec un professionnel et son avis de valeur. Vous n'avez aucune obligation de vendre ni de signer quoi que ce soit.</p></details>
+      <details><summary>D'où viennent les prix ?</summary><p>De la base « Demandes de valeurs foncières » (DVF), publiée par la Direction générale des Finances publiques. Elle recense les ventes signées devant notaire. Il y a toujours quelques mois de décalage entre la signature et la publication : la période exacte utilisée est indiquée sur votre résultat.</p></details>
+      <details><summary>Pourquoi un prix net vendeur ?</summary><p>Parce que c'est la somme que le vendeur perçoit. Les annonces affichent des prix frais d'agence inclus (FAI), plus élevés, et qui ne sont que des prix demandés. Nous comparons votre bien uniquement à des ventes signées, exprimées en net vendeur.</p></details>
+      <details><summary>Pourquoi utiliser parfois les ventes de 2018 ?</summary><p>Dans certains secteurs, il y a peu de ventes sur deux ans. Pour garder assez de références, nous ajoutons alors les ventes de 2018, année de référence, avant d'élargir le rayon de recherche. Votre résultat indique toujours si c'est le cas.</p></details>
+      <details><summary>Pourquoi un professionnel me rappelle-t-il ?</summary><p>Parce que vous l'avez accepté en cochant la case avant l'estimation : une agence immobilière partenaire vous appelle sous 48 heures ouvrées. Il vous propose une visite pour affiner le prix avec l'état réel de votre bien et vous remettre un avis de valeur écrit sous 48 h. Vous restez libre de refuser.</p></details>
+      <details><summary>Que deviennent mes données ?</summary><p>Elles servent uniquement à vous transmettre votre estimation et à être recontacté par le professionnel partenaire indiqué. Elles ne sont ni vendues ni cédées, et sont supprimées au bout de 3 ans sans contact. Vous pouvez demander leur suppression à tout moment.</p></details>
+    </div>
+  </div>
+</section>
+</main>
+
+<footer>
+  <div class="wrap cols">
+    <div>
+      <img src="assets/logo-blanc.svg" alt="MonEsti44" width="330" height="96">
+      <p style="margin-top:12px">Estimation immobilière en ligne en Loire-Atlantique, à partir des ventes réelles DVF. Prix exprimés en net vendeur.</p>
+      <p style="margin-top:8px" id="maj"></p>
+    </div>
+    <div>
+      <h3>Partenaire</h3>
+      <p id="partTxt"></p>
+    </div>
+    <div>
+      <h3>Informations</h3>
+      <details><summary>Mentions légales</summary><p id="mentions"></p></details>
+      <details><summary>Données personnelles</summary><p id="rgpd"></p></details>
+    </div>
+  </div>
+</footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script>
+/* =========================================================
+   RÉGLAGES : tout ce qui se modifie est ici
+   ========================================================= */
+var CFG = {
+  ANALYSE_SECONDES: 180,          // durée de l'écran d'analyse (180 = 3 minutes)
+  RAYON: 500,                     // rayon de recherche en mètres
+  MIN_COMPARABLES: 8,             // en dessous, on ajoute 2018 puis on élargit
+  AJUSTEMENT_MARCHE: -0.04,       // marché baissier : correction de la médiane des 2 dernières années (non appliquée si 2018 est utilisée)
+  RAYONS_ELARGIS: [1000, 1500],
+  // Adresse de réception des demandes (Google Apps Script, voir le guide). Vide = aucune transmission.
+  LEAD_URL: "",
+  PARTENAIRE: "Agence Benoit Immobilier",
+  PARTENAIRE_ADRESSE: "69 rue du Landreau, 44300 Nantes",
+  PARTENAIRE_TEL: "02 28 23 65 23",
+  TEL_CONTACT: "06 72 45 76 60",   // numéro du bouton « Appeler maintenant » sur le résultat
+  EDITEUR: "Nathan Frémont, agent commercial en immobilier, mandataire de l'Agence Benoit Immobilier",
+  EDITEUR_RSAC: "RSAC de Nantes n° [à compléter]",
+  EDITEUR_CARTE: "Carte professionnelle de l'agence n° [à compléter], délivrée par la CCI Nantes St-Nazaire",
+  CONTACT_RGPD: "nathan.fremont@agencebenoit.fr",
+  HEBERGEUR: "GitHub Inc., 88 Colin P. Kelly Jr. Street, San Francisco, CA 94107, États-Unis"
+};
+if (/[?&]rapide=1/.test(location.search)) CFG.ANALYSE_SECONDES = 10;
+</script>
+<script>
+(function(){
+"use strict";
+function $(id){return document.getElementById(id)}
+var euro=new Intl.NumberFormat("fr-FR",{maximumFractionDigits:0});
+function fmtE(n){return euro.format(n)+" €"}
+function fmtD(iso){var d=new Date(iso+"T12:00:00");return d.toLocaleDateString("fr-FR",{month:"long",year:"numeric"})}
+function fmtDs(iso){var d=new Date(iso+"T12:00:00");return d.toLocaleDateString("fr-FR",{month:"short",year:"numeric"})}
+function esc(s){return String(s).replace(/[&<>"]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]})}
+
+/* ---------- textes configurables ---------- */
+$("consentTxt").textContent="J'accepte d'être recontacté(e) par une agence immobilière partenaire sous 48 heures ouvrées. *";
+$("partnerLine").textContent="Agence partenaire : "+CFG.PARTENAIRE+", "+CFG.PARTENAIRE_ADRESSE+".";
+$("partTxt").textContent="Les demandes d'estimation sont traitées par "+CFG.PARTENAIRE+", "+CFG.PARTENAIRE_ADRESSE+", "+CFG.PARTENAIRE_TEL+".";
+$("mentions").textContent="Éditeur : "+CFG.EDITEUR+", "+CFG.PARTENAIRE_ADRESSE+". "+CFG.EDITEUR_RSAC+". "+CFG.EDITEUR_CARTE+". Hébergeur : "+CFG.HEBERGEUR+". Données de ventes : DVF, Direction générale des Finances publiques, publiées sur data.gouv.fr (Licence Ouverte). Fonds de carte et géocodage : IGN Géoplateforme. L'estimation en ligne est indicative et ne constitue pas un avis de valeur.";
+$("rgpd").textContent="Responsable du traitement : "+CFG.EDITEUR+". Finalités : afficher votre estimation et vous recontacter pour une estimation sur place, avec votre consentement. Destinataire : "+CFG.PARTENAIRE+". Durée de conservation : 3 ans après le dernier contact. Vous disposez d'un droit d'accès, de rectification, d'effacement et d'opposition en écrivant à "+CFG.CONTACT_RGPD+". Vous pouvez aussi saisir la CNIL.";
+["Nantes","Saint-Nazaire","Rezé","Saint-Herblain","Orvault","Vertou","Carquefou","La Chapelle-sur-Erdre","Couëron","Bouguenais","Saint-Sébastien-sur-Loire","Sainte-Luce-sur-Loire","La Baule-Escoublac","Pornichet","Pornic","Guérande","Saint-Brevin-les-Pins","Le Croisic","Ancenis-Saint-Géréon","Clisson","Châteaubriant","Blain","Savenay","Machecoul-Saint-Même","Nort-sur-Erdre","Treillières","Vallet","Pontchâteau"].forEach(function(c){var s=document.createElement("span");s.textContent=c;$("communes").appendChild(s)});
+
+/* ---------- typologie ---------- */
+function typoOptions(){var t=document.querySelector("input[name=type]:checked").value,box=$("typo"),prev=(document.querySelector("input[name=typo]:checked")||{}).value;
+ var opts=t==="Appartement"?[["1","Studio / T1"],["2","T2"],["3","T3"],["4","T4"],["5","T5 et +"]]:[["2","2 pièces"],["3","3 pièces"],["4","4 pièces"],["5","5 pièces"],["6","6 pièces"],["7","7 et +"]];
+ box.innerHTML="";opts.forEach(function(o,i){var id="ty"+o[0];var inp=document.createElement("input");inp.type="radio";inp.name="typo";inp.id=id;inp.value=o[0];if(o[0]===prev)inp.checked=true;var l=document.createElement("label");l.htmlFor=id;l.textContent=o[1];box.appendChild(inp);box.appendChild(l)})}
+document.querySelectorAll("input[name=type]").forEach(function(r){r.addEventListener("change",typoOptions)});typoOptions();
+
+/* ---------- meta (chiffres du département) ---------- */
+var META=null;
+fetch("data/meta.json",{cache:"no-cache"}).then(function(r){return r.ok?r.json():null}).then(function(m){if(!m)return;META=m;
+ $("stN").textContent=euro.format(m.ventes_recentes);$("stP").textContent=fmtDs(m.periode_debut).replace(".","")+" – "+fmtDs(m.periode_fin).replace(".","");$("stPl").textContent="de ventes signées analysées";$("stats").hidden=false;
+ $("maj").textContent="Ventes DVF du "+new Date(m.periode_debut+"T12:00").toLocaleDateString("fr-FR")+" au "+new Date(m.periode_fin+"T12:00").toLocaleDateString("fr-FR")+", mises à jour le "+new Date(m.mise_a_jour+"T12:00").toLocaleDateString("fr-FR")+"."}).catch(function(){});
+
+/* ---------- adresse (IGN Géoplateforme) ---------- */
+var chosen=null,sugTimer=null,sugItems=[],sugIdx=-1;
+var GEO="https://data.geopf.fr/geocodage/search";
+function geocode(q,limit){return fetch(GEO+"?q="+encodeURIComponent(q)+"&limit="+(limit||6)+"&autocomplete=1&index=address").then(function(r){return r.json()}).then(function(j){return (j.features||[]).filter(function(f){return String(f.properties.citycode||"").indexOf("44")===0||String(f.properties.postcode||"").indexOf("44")===0})})}
+function showSug(items){var box=$("sugg");sugItems=items;sugIdx=-1;box.innerHTML="";if(!items.length){box.hidden=true;return}
+ items.forEach(function(f,i){var b=document.createElement("button");b.type="button";b.setAttribute("role","option");b.innerHTML=esc(f.properties.name)+"<br><small>"+esc(f.properties.postcode+" "+f.properties.city)+"</small>";b.addEventListener("mousedown",function(e){e.preventDefault();pickSug(i)});box.appendChild(b)});box.hidden=false}
+function pickSug(i){var f=sugItems[i];if(!f)return;chosen=f;$("adresse").value=f.properties.label;$("sugg").hidden=true;$("adresse").classList.remove("bad")}
+$("adresse").addEventListener("input",function(){chosen=null;var q=this.value.trim();clearTimeout(sugTimer);if(q.length<4){$("sugg").hidden=true;return}sugTimer=setTimeout(function(){geocode(q).then(showSug).catch(function(){})},220)});
+$("adresse").addEventListener("keydown",function(e){var n=sugItems.length;if($("sugg").hidden||!n)return;if(e.key==="ArrowDown"||e.key==="ArrowUp"){e.preventDefault();sugIdx=(sugIdx+(e.key==="ArrowDown"?1:-1)+n)%n;[].forEach.call($("sugg").children,function(c,i){c.classList.toggle("act",i===sugIdx)})}else if(e.key==="Enter"&&sugIdx>=0){e.preventDefault();pickSug(sugIdx)}else if(e.key==="Escape"){$("sugg").hidden=true}});
+$("adresse").addEventListener("blur",function(){setTimeout(function(){$("sugg").hidden=true},150)});
+
+/* ---------- données de ventes ---------- */
+var tileCache={};
+function tileKeys(lat,lon,r){var T=(META&&META.tuile)||50,dLa=r/111320,dLo=r/(111320*Math.cos(lat*Math.PI/180)),keys=[];
+ for(var a=Math.floor((lat-dLa)*T);a<=Math.floor((lat+dLa)*T);a++)for(var b=Math.floor((lon-dLo)*T);b<=Math.floor((lon+dLo)*T);b++)keys.push(a+"_"+b);return keys}
+function loadTiles(folder,keys){return Promise.all(keys.map(function(k){var id=folder+"/"+k;if(tileCache[id])return tileCache[id];
+ tileCache[id]=fetch("data/"+id+".json").then(function(r){return r.ok?r.json():[]}).catch(function(){return []});return tileCache[id]})).then(function(arr){return [].concat.apply([],arr)})}
+function dist(a,b,c,d){var R=6371000,p=Math.PI/180,x=(d-b)*p*Math.cos((a+c)/2*p),y=(c-a)*p;return Math.sqrt(x*x+y*y)*R}
+function toSale(r,lat,lon,old){return {d:r[0],t:r[1],p:r[2],s:r[3],n:r[4],la:r[5],lo:r[6],v:r[7],c:r[8],te:r[9],m2:r[2]/r[3],dist:dist(lat,lon,r[5],r[6]),old:old}}
+function median(a){var s=a.slice().sort(function(x,y){return x-y}),n=s.length;return n?(n%2?s[(n-1)/2]:(s[n/2-1]+s[n/2])/2):0}
+function quant(a,q){var s=a.slice().sort(function(x,y){return x-y});var i=(s.length-1)*q,lo=Math.floor(i),hi=Math.ceil(i);return s[lo]+(s[hi]-s[lo])*(i-lo)}
+
+function estimate(inp){
+ var lat=inp.lat,lon=inp.lon,t=inp.type==="Maison"?0:1,maxR=CFG.RAYONS_ELARGIS[CFG.RAYONS_ELARGIS.length-1];
+ var keys=tileKeys(lat,lon,maxR);
+ return Promise.all([loadTiles("recent",keys),loadTiles("y2018",keys)]).then(function(res){
+  var rec=res[0].map(function(r){return toSale(r,lat,lon,false)}).filter(function(s){return s.t===t}),
+      old=res[1].map(function(r){return toSale(r,lat,lon,true)}).filter(function(s){return s.t===t});
+  var allNear=res[0].map(function(r){return toSale(r,lat,lon,false)}).filter(function(s){return s.dist<=CFG.RAYON});
+  var R=CFG.RAYON,use2018=false,pool=rec.filter(function(s){return s.dist<=R});
+  if(pool.length<CFG.MIN_COMPARABLES){use2018=true;pool=pool.concat(old.filter(function(s){return s.dist<=R}))}
+  var i=0;while(pool.length<CFG.MIN_COMPARABLES&&i<CFG.RAYONS_ELARGIS.length){R=CFG.RAYONS_ELARGIS[i++];pool=rec.concat(old).filter(function(s){return s.dist<=R})}
+  var out={radius:R,use2018:use2018,nearAll:allNear.length,poolAll:pool.length};
+  if(pool.length<3){out.ok=false;out.comps=pool;return out}
+  // biens comparables : surface proche, puis pièces proches, si assez de ventes
+  var sf=pool.filter(function(s){return s.s>=inp.surface*.6&&s.s<=inp.surface*1.6});if(sf.length>=CFG.MIN_COMPARABLES)pool=sf;
+  var pf=pool.filter(function(s){return !s.n||Math.abs(s.n-inp.pieces)<=1});if(pf.length>=CFG.MIN_COMPARABLES)pool=pf;
+  // on écarte les prix extrêmes (10 % de chaque côté)
+  var m2=pool.map(function(s){return s.m2});
+  if(pool.length>=10){var q1=quant(m2,.1),q9=quant(m2,.9);pool=pool.filter(function(s){return s.m2>=q1&&s.m2<=q9});m2=pool.map(function(s){return s.m2})}
+  var medBrut=median(m2),n=pool.length,adj=use2018?0:CFG.AJUSTEMENT_MARCHE,med=medBrut*(1+adj);out.m2brut=medBrut;out.ajust=adj;
+  var marge=n>=20?.06:(n>=12?.08:.10);if(use2018)marge+=.01;if(R>CFG.RAYON)marge+=.01;marge=Math.min(marge,.12);
+  var c=med*inp.surface;
+  out.ok=true;out.comps=pool.sort(function(a,b){return a.dist-b.dist});out.n=n;out.m2=med;out.marge=marge;
+  out.central=Math.round(c/1000)*1000;out.basse=Math.round(c*(1-marge)/1000)*1000;out.haute=Math.round(c*(1+marge)/1000)*1000;
+  out.confiance=n>=20&&!use2018&&R===CFG.RAYON?"Élevée":(n>=12?"Bonne":"Indicative");
+  var ds=pool.map(function(s){return s.d}).sort();out.dmin=ds[0];out.dmax=ds[ds.length-1];
+  return out});
+}
+
+/* ---------- envoi de la demande ---------- */
+function params(){var o={};location.search.replace(/[?&]([^=&]+)=([^&]*)/g,function(_,k,v){o[k]=decodeURIComponent(v.replace(/\+/g," "))});return o}
+function sendLead(inp,res){if(!CFG.LEAD_URL){console.warn("LEAD_URL non renseignée : la demande n'est pas transmise.");return}
+ var p=params(),body={id:inp.id,motif:inp.motif,date:new Date().toISOString(),prenom:inp.prenom,nom:inp.nom,email:inp.email,tel:inp.tel,adresse:inp.label,code_postal:inp.cp,ville:inp.ville,code_insee:inp.insee,lat:inp.lat,lon:inp.lon,type:inp.type,pieces:inp.pieces,surface:inp.surface,consentement:"Oui : "+$("consentTxt").textContent.replace(/ \*$/,""),
+  source:p.utm_source||document.referrer||"direct",campagne:p.utm_campaign||"",
+  estimation_basse:res&&res.ok?res.basse:"",estimation_centrale:res&&res.ok?res.central:"",estimation_haute:res&&res.ok?res.haute:"",prix_m2:res&&res.ok?Math.round(res.m2):"",ajustement_marche:res&&res.ok&&res.ajust?Math.round(res.ajust*100)+" %":"0 %",nb_comparables:res&&res.ok?res.n:0,rayon_m:res?res.radius:"",avec_2018:res&&res.use2018?"Oui":"Non"};
+ try{fetch(CFG.LEAD_URL,{method:"POST",mode:"no-cors",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify(body),keepalive:true})}catch(e){}}
+
+/* ---------- formulaire étape par étape ---------- */
+function bad(el,on){el.classList.toggle("bad",!!on)}
+var step=1;
+function goStep(n,noFocus){step=n;document.querySelectorAll("fieldset.st").forEach(function(f){f.hidden=+f.dataset.s!==n});
+ $("stepNo").textContent="Étape "+n+" sur 4";$("wbar").style.width=(n*25)+"%";$("back").hidden=n===1;$("msg").textContent="";
+ var app=$("app"),top=app.getBoundingClientRect().top;if(top<60||top>window.innerHeight*.5)window.scrollTo({top:app.getBoundingClientRect().top+window.scrollY-76,behavior:"smooth"});
+ if(!noFocus){var f={3:"adresse",4:"prenom"}[n];if(f)setTimeout(function(){$(f).focus({preventScroll:true})},260)}}
+function checkStep(n){var msg="",first=null;function need(el,ok){bad(el,!ok);if(!ok&&!first)first=el}
+ if(n===1){var m=document.querySelector("input[name=motif]:checked");$("motifs").classList.toggle("bad",!m);if(!m)msg="Choisissez votre projet pour continuer."}
+ if(n===2){var sf=parseInt($("surface").value,10);need($("surface"),sf>=9&&sf<=1000);
+  if(!document.querySelector("input[name=typo]:checked"))msg="Choisissez la typologie de votre bien.";if(first)msg="Indiquez la surface habitable en m².";}
+ if(n===3){need($("adresse"),$("adresse").value.trim().length>5);if(first)msg="Indiquez l'adresse du bien."}
+ if(n===4){var tel=$("tel").value.replace(/[\s.\-]/g,"");need($("prenom"),$("prenom").value.trim().length>0);need($("nom"),$("nom").value.trim().length>0);
+  need($("tel"),/^(?:\+33|0033|0)[1-9]\d{8}$/.test(tel));need($("email"),/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test($("email").value.trim()));
+  if(first)msg=first.id==="tel"?"Vérifiez votre numéro de téléphone.":(first.id==="email"?"Vérifiez votre adresse e-mail.":"Merci de compléter les champs en rouge.");
+  $("consentBox").classList.toggle("bad",!$("consent").checked);if(!msg&&!$("consent").checked)msg="Cochez la case pour accepter d'être recontacté(e) : c'est ce qui permet de vous proposer l'estimation."}
+ $("msg").textContent=msg;if(msg&&first)first.focus();return !msg}
+function resolveAddress(){if(chosen)return Promise.resolve(chosen);return geocode($("adresse").value.trim(),1).then(function(r){if(r[0]){chosen=r[0];$("adresse").value=r[0].properties.label}return r[0]||null}).catch(function(){return null})}
+function next(){if(!checkStep(step))return;
+ if(step===3){resolveAddress().then(function(f){if(!f){bad($("adresse"),true);$("msg").textContent="Adresse introuvable en Loire-Atlantique. Choisissez-la dans la liste proposée.";$("adresse").focus();return}goStep(4)});return}
+ goStep(step+1)}
+document.querySelectorAll("[data-next]").forEach(function(b){b.addEventListener("click",next)});
+$("back").addEventListener("click",function(){if(step>1)goStep(step-1,true)});
+document.querySelectorAll("input[name=motif]").forEach(function(r){r.addEventListener("change",function(){$("motifs").classList.remove("bad");setTimeout(function(){if(step===1)goStep(2,true)},220)})});
+$("typo").addEventListener("change",function(){$("msg").textContent="";if(!$("surface").value)setTimeout(function(){$("surface").focus()},60)});
+var _pick=pickSug;pickSug=function(i){_pick(i);if(chosen&&step===3)setTimeout(function(){goStep(4)},250)};
+$("f").addEventListener("submit",function(e){e.preventDefault();
+ if(step<4){next();return}
+ for(var n=1;n<=4;n++){if(!checkStep(n)){goStep(n,true);checkStep(n);return}}
+ if($("site").value)return; // anti-robots
+ var motif=document.querySelector("input[name=motif]:checked"),typo=document.querySelector("input[name=typo]:checked");
+ resolveAddress().then(function(f){if(!f){goStep(3);bad($("adresse"),true);$("msg").textContent="Adresse introuvable en Loire-Atlantique. Choisissez-la dans la liste proposée.";return}
+  var pr=f.properties,c=f.geometry.coordinates;
+  start({motif:motif.value,id:"EST-"+Date.now().toString(36).toUpperCase(),type:document.querySelector("input[name=type]:checked").value,pieces:parseInt(typo.value,10),surface:parseInt($("surface").value,10),tel:$("tel").value.trim(),email:$("email").value.trim(),prenom:$("prenom").value.trim(),nom:$("nom").value.trim(),
+   label:pr.label,cp:pr.postcode,ville:pr.city,insee:pr.citycode,lat:c[1],lon:c[0]})});
+});
+document.querySelectorAll("#f input").forEach(function(i){i.addEventListener("input",function(){i.classList.remove("bad")})});
+$("consent").addEventListener("change",function(){$("consentBox").classList.toggle("bad",!this.checked);if(this.checked)$("msg").textContent=""});
+/* bouton fixe en bas de l'écran (téléphone) */
+(function(){var st=$("sticky");if(!("IntersectionObserver" in window))return;var vis=true;
+ new IntersectionObserver(function(en){vis=en[0].isIntersecting;upd()},{threshold:.15}).observe($("app"));
+ function upd(){st.hidden=vis||$("vForm").hidden}window.__upSticky=upd;
+ st.addEventListener("click",function(e){e.preventDefault();window.scrollTo({top:$("app").getBoundingClientRect().top+window.scrollY-76,behavior:"smooth"})})})();
+
+/* ---------- analyse ---------- */
+var TIPS=["Le prix net vendeur est ce que le vendeur perçoit. Le prix affiché dans une annonce (FAI) inclut en plus les honoraires d'agence.","Un bien bien placé en prix dès sa mise en vente reçoit la majorité de ses visites dans les premières semaines.","Les ventes DVF sont publiées avec quelques mois de décalage : la période exacte utilisée est indiquée sur votre résultat.","Deux maisons de même surface dans la même rue peuvent avoir des prix très différents selon leur état et leur terrain.","Le diagnostic de performance énergétique (DPE) influence de plus en plus le prix, surtout pour les logements classés F et G.","Pour un appartement, l'étage, l'ascenseur et les charges de copropriété font partie des critères qui comptent le plus.","Une visite de 45 minutes suffit en général à un professionnel pour affiner l'estimation de votre bien."];
+var map=null,layer=null;
+function show(v){["vForm","vAn","vRes"].forEach(function(id){$(id).hidden=id!==v});document.querySelector(".hero .grid").classList.toggle("focus",v!=="vForm");if(window.__upSticky)window.__upSticky();var app=$("app");var top=app.getBoundingClientRect().top+window.scrollY-80;if(window.scrollY>top)window.scrollTo({top:top,behavior:"smooth"})}
+function mkMap(el,lat,lon,zoom){if(!window.L)return null;var m=L.map(el,{zoomControl:true,attributionControl:true,scrollWheelZoom:false}).setView([lat,lon],zoom);
+ L.tileLayer("https://data.geopf.fr/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=GEOGRAPHICALGRIDSYSTEMS.PLANIGNV2&STYLE=normal&TILEMATRIXSET=PM&FORMAT=image/png&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}",{maxZoom:19,attribution:"© IGN Géoplateforme"}).addTo(m);return m}
+function homeIcon(){return L.divIcon({className:"",html:'<svg width="34" height="44" viewBox="0 0 34 44"><path d="M17 43C17 43 2 26 2 16a15 15 0 0 1 30 0c0 10-15 27-15 27z" fill="#0F2A44" stroke="#fff" stroke-width="2"/><path d="M9 18l8-7 8 7v8H9z" fill="#D9A62B"/></svg>',iconSize:[34,44],iconAnchor:[17,43]})}
+function start(inp){
+ var res=null,dataP=estimate(inp).then(function(r){res=r;sendLead(inp,r);return r}).catch(function(){res={ok:false,comps:[],radius:CFG.RAYON,err:true};sendLead(inp,res);return res});
+ show("vAn");
+ var steps=[["Localisation de votre adresse",inp.label,.06],["Chargement des ventes DVF de Loire-Atlantique","Ventes signées, prix net vendeur",.12],["Recherche des ventes dans un rayon de "+CFG.RAYON+" m","Sur les 24 derniers mois disponibles",.2],["Sélection des biens comparables",inp.type+", "+inp.surface+" m², "+inp.pieces+" pièces",.18],["Contrôle de la profondeur de marché","Ajout de 2018 ou élargissement si nécessaire",.12],["Écart des prix extrêmes et calcul du prix médian au m²","En net vendeur, avec ajustement à la tendance actuelle du marché",.16],["Calcul de votre fourchette de prix","Marge selon le nombre de ventes comparables",.1],["Préparation de votre résultat","",.06]];
+ var ol=$("anSteps");ol.innerHTML="";steps.forEach(function(s){var li=document.createElement("li");li.innerHTML='<span class="ic"></span><span>'+esc(s[0])+(s[1]?"<small>"+esc(s[1])+"</small>":"")+"</span>";ol.appendChild(li)});
+ var bounds=[],acc=0;steps.forEach(function(s){acc+=s[2];bounds.push(acc)});
+ $("cV").textContent="0";$("cC").textContent="0";
+ if(map){map.remove();map=null}
+ setTimeout(function(){map=mkMap($("anMap"),inp.lat,inp.lon,16);if(map){L.marker([inp.lat,inp.lon],{icon:homeIcon()}).addTo(map);layer=L.layerGroup().addTo(map)}},50);
+ var T=CFG.ANALYSE_SECONDES*1000,t0=performance.now(),tipI=0,drawn=0,circle=null,shownC=0;
+ $("tip").textContent=TIPS[0];var tipT=setInterval(function(){tipI=(tipI+1)%TIPS.length;$("tip").textContent=TIPS[tipI]},Math.max(4000,T/TIPS.length));
+ (function frame(){var el=performance.now()-t0,p=Math.min(1,el/T);
+  // on n'avance pas au-delà de l'étape 2 tant que les données ne sont pas chargées
+  if(!res&&p>bounds[1]){t0+=16;p=bounds[1]}
+  $("anBar").style.width=(p*100).toFixed(1)+"%";$("anPct").textContent=Math.floor(p*100)+" %";
+  var left=Math.max(0,Math.ceil((1-p)*CFG.ANALYSE_SECONDES));$("anEta").textContent=left>60?"environ "+Math.ceil(left/60)+" min restantes":left+" s restantes";
+  var cur=0;while(cur<bounds.length&&p>=bounds[cur])cur++;
+  [].forEach.call(ol.children,function(li,i){li.className=i<cur?"ok":(i===cur?"on":"")});
+  if(res&&map&&layer){
+   if(p>=bounds[1]&&!circle){circle=L.circle([inp.lat,inp.lon],{radius:res.radius,color:"#D9A62B",weight:3,dashArray:"8 6",fillOpacity:.06}).addTo(map);map.fitBounds(circle.getBounds(),{padding:[10,10]})}
+   var all=res.comps||[],k=p<bounds[1]?0:Math.floor(all.length*Math.min(1,(p-bounds[1])/(bounds[3]-bounds[1])));
+   while(drawn<k){var s=all[drawn++];L.circleMarker([s.la,s.lo],{radius:6,color:"#fff",weight:1.5,fillColor:s.old?"#8795A3":"#D9A62B",fillOpacity:1}).addTo(layer)}
+   var nearN=Math.max(res.nearAll||0,res.poolAll||0);$("cV").textContent=String(Math.floor(nearN*Math.min(1,Math.max(0,(p-bounds[1])/(bounds[2]-bounds[1])))));
+   shownC=p>=bounds[3]?(res.n||all.length):Math.floor((res.n||all.length)*Math.max(0,(p-bounds[2])/(bounds[3]-bounds[2])));$("cC").textContent=String(Math.max(0,shownC));
+  }
+  if(p<1)requestAnimationFrame(frame);else{clearInterval(tipT);dataP.then(function(r){renderResult(inp,r)})}
+ })();
+}
+
+/* ---------- résultat ---------- */
+var MOTIF_TXT={"Un projet de vente":" pour préparer votre projet de vente","Avoir une idée du prix de mon logement":" pour affiner le prix de votre logement","Connaître le prix de vente pour une recherche":" pour vous aider à situer les prix du secteur dans votre recherche"};
+function renderResult(inp,r){
+ var box=$("vRes"),h="";
+ h+='<div><p class="eyebrow">Votre estimation · réf. '+esc(inp.id)+'</p><h2 style="margin-top:6px;font-size:24px">'+esc(inp.type)+", "+inp.surface+" m², "+inp.pieces+' pièces</h2><p class="addr">'+esc(inp.label)+"</p></div>";
+ if(r.ok){
+  h+='<div class="price"><p class="lab">Prix net vendeur estimé</p><div class="range"><b>'+fmtE(r.basse)+'</b><span>à</span><b>'+fmtE(r.haute)+'</b></div>'+
+   '<div class="scale" aria-hidden="true"><i></i></div><div class="scale-l"><span>Basse</span><span>Centrale</span><span>Haute</span></div>'+
+   '<p class="central">Valeur centrale : <strong>'+fmtE(r.central)+'</strong>, soit '+fmtE(Math.round(r.m2/10)*10)+' par m² net vendeur. Fourchette de ± '+Math.round(r.marge*100)+' %.</p>'+(r.ajust?'<p class="central" style="margin-top:6px;font-size:14px">Ajustement marché de '+Math.round(r.ajust*100)+' % appliqué au prix médian des ventes ('+fmtE(Math.round(r.m2brut/10)*10)+' par m²), pour tenir compte de la baisse récente des prix.</p>':'')+'</div>';
+  h+='<div class="kpis"><div class="kpi"><b>'+r.n+'</b><span>ventes comparables</span></div><div class="kpi"><b>'+r.radius+' m</b><span>rayon de recherche</span></div><div class="kpi"><b>'+fmtDs(r.dmin).replace(".","")+" – "+fmtDs(r.dmax).replace(".","")+'</b><span>période des ventes</span></div><div class="kpi"><b><span class="conf">'+r.confiance+'</span></b><span>indice de fiabilité</span></div></div>';
+  var notes=[];if(r.use2018)notes.push("Peu de ventes récentes à moins de "+CFG.RAYON+" m : les ventes de 2018 ont été ajoutées (en gris).");if(r.radius>CFG.RAYON)notes.push("Le rayon a été élargi à "+r.radius+" m pour disposer d'assez de références.");
+  if(notes.length)h+='<p class="note">'+esc(notes.join(" "))+"</p>";
+ }else{
+  h+='<div class="price"><p class="lab">Estimation en ligne</p><p style="font:700 22px var(--display);margin-top:8px">'+(r.err?"Les données de ventes sont momentanément indisponibles.":"Trop peu de ventes comparables autour de votre adresse pour une fourchette fiable.")+'</p><p class="central">Votre demande est bien enregistrée : un professionnel du secteur vous rappelle pour une estimation sur place.</p></div>';
+ }
+ h+='<div class="mapbox" id="resMap" style="height:280px;margin-top:0"></div>';
+ var rows=(r.comps||[]).slice(0,12);
+ if(rows.length){h+='<div><h3 style="margin-bottom:10px">Les ventes de référence les plus proches</h3><div class="tbl"><table><thead><tr><th>Date</th><th>Adresse</th><th>Type</th><th>Pièces</th><th>Surface</th><th>Prix net vendeur</th><th>€/m²</th><th>Distance</th></tr></thead><tbody>';
+  rows.forEach(function(s){h+='<tr'+(s.old?' class="old"':"")+"><td>"+fmtDs(s.d)+"</td><td>"+esc((s.v?s.v+", ":"")+s.c)+"</td><td>"+(s.t?"Appartement":"Maison")+'</td><td class="n">'+(s.n||"–")+'</td><td class="n">'+s.s+' m²</td><td class="n">'+fmtE(s.p)+'</td><td class="n">'+fmtE(Math.round(s.m2))+'</td><td class="n">'+Math.round(s.dist)+" m</td></tr>"});
+  h+="</tbody></table></div><div class=\"salecards\">";rows.forEach(function(s){h+='<div class="sale'+(s.old?' old':'')+'"><div class="l1"><span>'+fmtDs(s.d)+'</span><span>à '+Math.round(s.dist)+' m</span></div><div class="l2"><b>'+fmtE(s.p)+'</b><span>'+fmtE(Math.round(s.m2))+'/m²</span></div><div class="l3">'+(s.t?"Appartement":"Maison")+(s.n?", "+s.n+" p.":"")+", "+s.s+' m²</div><div class="l1"><span>'+esc((s.v?s.v+", ":"")+s.c)+'</span></div></div>'});h+="</div><p class=\"note\" style=\"margin-top:8px\">Source : DVF, ventes signées devant notaire. Prix net vendeur, hors honoraires d'agence à la charge de l'acquéreur et hors frais de notaire.</p></div>"}
+ h+='<div class="next"><h3>Une agence partenaire vous recontacte sous 48 heures ouvrées</h3><p style="margin-top:6px">'+esc(inp.prenom)+", comme vous l'avez accepté, une agence immobilière partenaire de votre secteur ("+esc(CFG.PARTENAIRE)+") va vous appeler au "+esc(inp.tel)+" sous 48 heures ouvrées"+(MOTIF_TXT[inp.motif]||"")+" :</p><ul><li>une visite de votre bien, à la date qui vous convient ;</li><li>un avis de valeur écrit sous 48 h, qui tient compte de l'état, des travaux et des atouts de votre bien ;</li><li>des conseils pour vendre vite et au bon prix. Gratuit et sans engagement.</li></ul><a class=\"btn full call\" href=\"tel:"+CFG.TEL_CONTACT.replace(/\s/g,"")+"\">Appeler maintenant : "+esc(CFG.TEL_CONTACT)+"</a></div>";
+ h+='<p class="note">Cette fourchette est indicative : elle repose uniquement sur les ventes comparables du secteur et ne remplace pas un avis de valeur établi après visite. Tous les prix sont exprimés en net vendeur.</p>';
+ h+='<div style="display:flex;gap:10px;flex-wrap:wrap"><button class="btn ghost" type="button" id="again">Faire une autre estimation</button></div>';
+ box.innerHTML=h;show("vRes");
+ $("again").onclick=function(){$("f").reset();typoOptions();$("motifs").classList.remove("bad");chosen=null;show("vForm")};
+ setTimeout(function(){var m=mkMap($("resMap"),inp.lat,inp.lon,16);if(!m)return;L.marker([inp.lat,inp.lon],{icon:homeIcon()}).addTo(m);var c=L.circle([inp.lat,inp.lon],{radius:r.radius||CFG.RAYON,color:"#D9A62B",weight:3,dashArray:"8 6",fillOpacity:.05}).addTo(m);
+  (r.comps||[]).forEach(function(s){L.circleMarker([s.la,s.lo],{radius:6,color:"#fff",weight:1.5,fillColor:s.old?"#8795A3":"#D9A62B",fillOpacity:1}).bindPopup(fmtDs(s.d)+" · "+(s.t?"Appartement":"Maison")+" "+s.s+" m²<br><b>"+fmtE(s.p)+"</b> net vendeur").addTo(m)});m.fitBounds(c.getBounds(),{padding:[10,10]})},60);
+}
+})();
+</script>
+</body>
+</html>
