@@ -503,8 +503,8 @@ var CFG = {
   PARTENAIRE_TEL: "02 28 23 65 23",
   TEL_CONTACT: "06 72 45 76 60",   // numéro du bouton « Appeler maintenant » sur le résultat
   EDITEUR: "Nathan Frémont, agent commercial en immobilier, mandataire de l'Agence Benoit Immobilier",
-  EDITEUR_RSAC: "RSAC de Nantes n° [à compléter]",
-  EDITEUR_CARTE: "Carte professionnelle de l'agence n° [à compléter], délivrée par la CCI Nantes St-Nazaire",
+  EDITEUR_RSAC: "SIRET 848 511 101 00026",
+  EDITEUR_CARTE: "",
   CONTACT_RGPD: "nathan.fremont@agencebenoit.fr",
   HEBERGEUR: "GitHub Inc., 88 Colin P. Kelly Jr. Street, San Francisco, CA 94107, États-Unis"
 };
@@ -524,7 +524,7 @@ function esc(s){return String(s).replace(/[&<>"]/g,function(c){return {"&":"&amp
 $("consentTxt").textContent="J'accepte d'être recontacté(e) par une agence immobilière partenaire sous 48 heures ouvrées. *";
 $("partnerLine").textContent="Agence partenaire : "+CFG.PARTENAIRE+", "+CFG.PARTENAIRE_ADRESSE+".";
 $("partTxt").textContent="Les demandes d'estimation sont traitées par "+CFG.PARTENAIRE+", "+CFG.PARTENAIRE_ADRESSE+", "+CFG.PARTENAIRE_TEL+".";
-$("mentions").textContent="Éditeur : "+CFG.EDITEUR+", "+CFG.PARTENAIRE_ADRESSE+". "+CFG.EDITEUR_RSAC+". "+CFG.EDITEUR_CARTE+". Hébergeur : "+CFG.HEBERGEUR+". Données de ventes : DVF, Direction générale des Finances publiques, publiées sur data.gouv.fr (Licence Ouverte). Fonds de carte et géocodage : IGN Géoplateforme. L'estimation en ligne est indicative et ne constitue pas un avis de valeur.";
+$("mentions").textContent="Éditeur : "+CFG.EDITEUR+", "+CFG.PARTENAIRE_ADRESSE+". "+[CFG.EDITEUR_RSAC,CFG.EDITEUR_CARTE].filter(Boolean).join(". ")+". Hébergeur : "+CFG.HEBERGEUR+". Données de ventes : DVF, Direction générale des Finances publiques, publiées sur data.gouv.fr (Licence Ouverte). Fonds de carte et géocodage : IGN Géoplateforme. L'estimation en ligne est indicative et ne constitue pas un avis de valeur.";
 $("rgpd").textContent="Responsable du traitement : "+CFG.EDITEUR+". Finalités : afficher votre estimation et vous recontacter pour une estimation sur place, avec votre consentement. Destinataire : "+CFG.PARTENAIRE+". Durée de conservation : 3 ans après le dernier contact. Vous disposez d'un droit d'accès, de rectification, d'effacement et d'opposition en écrivant à "+CFG.CONTACT_RGPD+". Vous pouvez aussi saisir la CNIL.";
 ["Nantes","Saint-Nazaire","Rezé","Saint-Herblain","Orvault","Vertou","Carquefou","La Chapelle-sur-Erdre","Couëron","Bouguenais","Saint-Sébastien-sur-Loire","Sainte-Luce-sur-Loire","La Baule-Escoublac","Pornichet","Pornic","Guérande","Saint-Brevin-les-Pins","Le Croisic","Ancenis-Saint-Géréon","Clisson","Châteaubriant","Blain","Savenay","Machecoul-Saint-Même","Nort-sur-Erdre","Treillières","Vallet","Pontchâteau"].forEach(function(c){var s=document.createElement("span");s.textContent=c;$("communes").appendChild(s)});
 
