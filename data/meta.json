@@ -1,0 +1,12 @@
+{
+ "departement": "44",
+ "periode_debut": "2023-12-28",
+ "periode_fin": "2025-12-31",
+ "ventes_recentes": 36806,
+ "maisons": 22282,
+ "appartements": 14524,
+ "ventes_2018": 0,
+ "tuile": 50,
+ "mise_a_jour": "2026-09-30",
+ "source": "DVF géolocalisées, data.gouv.fr (DGFiP / Etalab)"
+}
