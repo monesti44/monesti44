@@ -1,0 +1,24 @@
+{
+ "name": "Studio Stories 44",
+ "short_name": "Stories 44",
+ "description": "Création des stories MonEsti44 : vidéos, couvertures et légendes.",
+ "lang": "fr",
+ "start_url": "./",
+ "scope": "./",
+ "display": "standalone",
+ "background_color": "#0F2A44",
+ "theme_color": "#0F2A44",
+ "icons": [
+  {
+   "src": "icon-192.png",
+   "sizes": "192x192",
+   "type": "image/png"
+  },
+  {
+   "src": "icon-512.png",
+   "sizes": "512x512",
+   "type": "image/png",
+   "purpose": "any maskable"
+  }
+ ]
+}
