@@ -498,6 +498,8 @@ var CFG = {
   RAYONS_ELARGIS: [1000, 1500],
   // Adresse de réception des demandes (Google Apps Script, voir le guide). Vide = aucune transmission.
   LEAD_URL: "https://script.google.com/macros/s/AKfycbxsPVaCielk_a5y_nt5GLSDbtB2Qv2XYNLJlBe5HfsvodGRSkmcikL4FZs52mjLAfRDCQ/exec",
+  // Statistiques de visite (sans cookie) envoyées à la même adresse : onglets « Statistiques » et « Résumé »
+  STATS: false,
   PARTENAIRE: "Agence Benoit Immobilier",
   PARTENAIRE_ADRESSE: "69 rue du Landreau, 44300 Nantes",
   PARTENAIRE_TEL: "02 28 23 65 23",
@@ -598,10 +600,23 @@ function sendLead(inp,res){if(!CFG.LEAD_URL){console.warn("LEAD_URL non renseign
   estimation_basse:res&&res.ok?res.basse:"",estimation_centrale:res&&res.ok?res.central:"",estimation_haute:res&&res.ok?res.haute:"",prix_m2:res&&res.ok?Math.round(res.m2):"",ajustement_marche:res&&res.ok&&res.ajust?Math.round(res.ajust*100)+" %":"0 %",nb_comparables:res&&res.ok?res.n:0,rayon_m:res?res.radius:"",avec_2018:res&&res.use2018?"Oui":"Non"};
  try{fetch(CFG.LEAD_URL,{method:"POST",mode:"no-cors",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify(body),keepalive:true})}catch(e){}}
 
+/* ---------- statistiques de visite (sans cookie, aucune donnée personnelle) ---------- */
+var STAT_SRC=(function(){var s=(params().utm_source||"").toLowerCase(),r="";try{r=document.referrer?new URL(document.referrer).hostname:""}catch(e){}
+ if(s)return s;if(/instagram/.test(r))return "instagram";if(/tiktok/.test(r))return "tiktok";if(/youtu/.test(r))return "youtube";if(/facebook|fb\.|messenger/.test(r))return "facebook";
+ if(/google|bing|qwant|ecosia|duckduckgo|yahoo|lilo/.test(r))return "moteur de recherche";if(r&&r.indexOf("monesti44")<0)return "autre site";return "direct"})();
+var statDone={};
+function track(ev){if(!CFG.STATS||!CFG.LEAD_URL||statDone[ev]||navigator.webdriver||/[?&]rapide=1/.test(location.search))return;statDone[ev]=1;
+ try{var k="me44_"+ev;if(sessionStorage.getItem(k))return;sessionStorage.setItem(k,"1")}catch(e){}
+ var body=JSON.stringify({kind:"stat",ev:ev,source:STAT_SRC,mobile:/Mobi|Android|iPhone|iPad/i.test(navigator.userAgent)?1:0});
+ try{if(navigator.sendBeacon&&navigator.sendBeacon(CFG.LEAD_URL,new Blob([body],{type:"text/plain;charset=utf-8"})))return}catch(e){}
+ try{fetch(CFG.LEAD_URL,{method:"POST",mode:"no-cors",headers:{"Content-Type":"text/plain;charset=utf-8"},body:body,keepalive:true})}catch(e){}}
+track("visite");
+document.addEventListener("click",function(e){var a=e.target.closest&&e.target.closest('a[href^="tel:"]');if(a)track("appel")});
+
 /* ---------- formulaire étape par étape ---------- */
 function bad(el,on){el.classList.toggle("bad",!!on)}
 var step=1;
-function goStep(n,noFocus){step=n;document.querySelectorAll("fieldset.st").forEach(function(f){f.hidden=+f.dataset.s!==n});
+function goStep(n,noFocus){step=n;if(n>1)track("etape"+n);document.querySelectorAll("fieldset.st").forEach(function(f){f.hidden=+f.dataset.s!==n});
  $("stepNo").textContent="Étape "+n+" sur 4";$("wbar").style.width=(n*25)+"%";$("back").hidden=n===1;$("msg").textContent="";
  var app=$("app"),top=app.getBoundingClientRect().top;if(top<60||top>window.innerHeight*.5)window.scrollTo({top:app.getBoundingClientRect().top+window.scrollY-76,behavior:"smooth"});
  if(!noFocus){var f={3:"adresse",4:"prenom"}[n];if(f)setTimeout(function(){$(f).focus({preventScroll:true})},260)}}
@@ -649,7 +664,7 @@ function show(v){["vForm","vAn","vRes"].forEach(function(id){$(id).hidden=id!==v
 function mkMap(el,lat,lon,zoom){if(!window.L)return null;var m=L.map(el,{zoomControl:true,attributionControl:true,scrollWheelZoom:false}).setView([lat,lon],zoom);
  L.tileLayer("https://data.geopf.fr/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=GEOGRAPHICALGRIDSYSTEMS.PLANIGNV2&STYLE=normal&TILEMATRIXSET=PM&FORMAT=image/png&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}",{maxZoom:19,attribution:"© IGN Géoplateforme"}).addTo(m);return m}
 function homeIcon(){return L.divIcon({className:"",html:'<svg width="34" height="44" viewBox="0 0 34 44"><path d="M17 43C17 43 2 26 2 16a15 15 0 0 1 30 0c0 10-15 27-15 27z" fill="#0F2A44" stroke="#fff" stroke-width="2"/><path d="M9 18l8-7 8 7v8H9z" fill="#D9A62B"/></svg>',iconSize:[34,44],iconAnchor:[17,43]})}
-function start(inp){
+function start(inp){track("estimation");
  var res=null,dataP=estimate(inp).then(function(r){res=r;sendLead(inp,r);return r}).catch(function(){res={ok:false,comps:[],radius:CFG.RAYON,err:true};sendLead(inp,res);return res});
  show("vAn");
  var steps=[["Localisation de votre adresse",inp.label,.06],["Chargement des ventes DVF de Loire-Atlantique","Ventes signées, prix net vendeur",.12],["Recherche des ventes dans un rayon de "+CFG.RAYON+" m","Sur les 24 derniers mois disponibles",.2],["Sélection des biens comparables",inp.type+", "+inp.surface+" m², "+inp.pieces+" pièces",.18],["Contrôle de la profondeur de marché","Ajout de 2018 ou élargissement si nécessaire",.12],["Écart des prix extrêmes et calcul du prix médian au m²","En net vendeur, avec ajustement à la tendance actuelle du marché",.16],["Calcul de votre fourchette de prix","Marge selon le nombre de ventes comparables",.1],["Préparation de votre résultat","",.06]];
@@ -680,7 +695,7 @@ function start(inp){
 
 /* ---------- résultat ---------- */
 var MOTIF_TXT={"Un projet de vente":" pour préparer votre projet de vente","Avoir une idée du prix de mon logement":" pour affiner le prix de votre logement","Connaître le prix de vente pour une recherche":" pour vous aider à situer les prix du secteur dans votre recherche"};
-function renderResult(inp,r){
+function renderResult(inp,r){track("resultat");
  var box=$("vRes"),h="";
  h+='<div><p class="eyebrow">Votre estimation · réf. '+esc(inp.id)+'</p><h2 style="margin-top:6px;font-size:24px">'+esc(inp.type)+", "+inp.surface+" m², "+inp.pieces+' pièces</h2><p class="addr">'+esc(inp.label)+"</p></div>";
  if(r.ok){
