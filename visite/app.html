@@ -43,7 +43,7 @@
   window.google = { script: { run: fabrique(null, null) } };
   window.__appel = appel;
   window.__demarrer = function (fn, args, apres) {
-    appel(fn, args).then(function (data) {
+    (typeof fn === 'function' ? fn() : appel(fn, args)).then(function (data) {
       window.__DATA = data;
       if (apres) apres(data);
       var s = document.createElement('script');

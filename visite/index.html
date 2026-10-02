@@ -2,6 +2,8 @@
 <html lang="fr">
 <head>
 <title>Proposer une visite</title>
+<link rel="preconnect" href="https://script.google.com">
+<link rel="preconnect" href="https://script.googleusercontent.com" crossorigin>
 <script>
 (function () {
   var API = 'https://script.google.com/macros/s/AKfycbxZRkfwG6fKvO_TV-4JiArG7b7LxuQHa08Jj2iq_UFFXxYnN5cvUNG-98GkEqZhfnO10A/exec';
@@ -38,7 +40,7 @@
   window.google = { script: { run: fabrique(null, null) } };
   window.__appel = appel;
   window.__demarrer = function (fn, args, apres) {
-    appel(fn, args).then(function (data) {
+    (typeof fn === 'function' ? fn() : appel(fn, args)).then(function (data) {
       window.__DATA = data;
       if (apres) apres(data);
       var s = document.createElement('script');
@@ -190,7 +192,7 @@
 <body>
 <div class="wrap">
   <div class="agence"><div class="pastille">NF</div><span id="agence"></span></div>
-  <div id="contenu"></div>
+  <div id="contenu"><div class="etat" style="padding-top:80px"><div class="spin"></div>Chargement des disponibilités…</div></div>
   <p class="contact" id="contact"></p>
 </div>
 <div class="barre" id="barre" hidden>
@@ -229,6 +231,7 @@ function demarrer() {
     etat('<h1>Lien indisponible</h1><p class="adresse">Ce bien n\'est plus proposé à la visite, ou le lien est incomplet.</p>');
     return;
   }
+  if (window.__JOURS) { var dejaLa = window.__JOURS; window.__JOURS = null; recevoir(dejaLa); return; }
   etat(enTete() + '<div class="etat"><div class="spin"></div>Chargement des disponibilités…</div>');
   google.script.run
     .withSuccessHandler(function (jours) { recevoir(jours); })
@@ -400,6 +403,12 @@ document.addEventListener('click', function (e) {
 
 demarrer();
 </script>
-<script>var q = new URLSearchParams(location.search);__demarrer('pageClient', [q.get('bien'), q.get('nom'), q.get('email')], function (d) { if (d.bien) document.title = 'Visite · ' + d.bien.titre; });</script>
+<script>var q = new URLSearchParams(location.search);var params = [q.get('bien'), q.get('nom'), q.get('email')];
+__demarrer(function () {
+  return __appel('pageClientComplet', params).catch(function (e) {
+    if (String(e.message).indexOf('Action inconnue') < 0) throw e;
+    return __appel('pageClient', params).then(function (p) { return { page: p, jours: null }; });
+  });
+}, null, function (d) { window.__JOURS = d.jours; window.__DATA = d.page; if (d.page.bien) document.title = 'Visite · ' + d.page.bien.titre; });</script>
 </body>
 </html>
