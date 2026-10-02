@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<title>Proposer une visite</title>
+<script>
+(function () {
+  var API = 'https://script.google.com/macros/s/AKfycbxZRkfwG6fKvO_TV-4JiArG7b7LxuQHa08Jj2iq_UFFXxYnN5cvUNG-98GkEqZhfnO10A/exec';
+  function appel(fn, args) {
+    return fetch(API, { method: 'POST', credentials: 'omit', redirect: 'follow',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ fn: fn, args: args }) })
+      .then(function (r) { if (!r.ok) throw new Error('Serveur indisponible (' + r.status + ')'); return r.json(); })
+      .then(function (j) { if (!j.ok) throw new Error(j.error || 'Erreur'); return j.r; });
+  }
+  function Run(ok, ko) { this.ok = ok; this.ko = ko; }
+  function fabrique(ok, ko) {
+    return new Proxy(new Run(ok, ko), { get: function (t, nom) {
+      if (nom === 'withSuccessHandler') return function (f) { return fabrique(f, t.ko); };
+      if (nom === 'withFailureHandler') return function (f) { return fabrique(t.ok, f); };
+      return function () {
+        var args = Array.prototype.slice.call(arguments);
+        appel(nom, args).then(function (r) { t.ok && t.ok(r); }, function (e) { t.ko ? t.ko(e) : console.error(e); });
+      };
+    } });
+  }
+  window.google = { script: { run: fabrique(null, null) } };
+  window.__appel = appel;
+  window.__demarrer = function (fn, args, apres) {
+    appel(fn, args).then(function (data) {
+      window.__DATA = data;
+      if (apres) apres(data);
+      var s = document.createElement('script');
+      s.textContent = document.getElementById('principal').textContent;
+      document.body.appendChild(s);
+    }, function (e) {
+      document.body.innerHTML = '<div style="font:15px Arial,sans-serif;max-width:520px;margin:60px auto;padding:0 16px;color:#1b2230">' +
+        '<h2>Connexion impossible</h2><p>' + String(e.message || e).replace(/</g, '&lt;') + '</p><p><button onclick="location.reload()" style="padding:10px 16px;border-radius:8px;border:0;background:#1f3a5f;color:#fff;font-weight:bold;cursor:pointer">Réessayer</button></p></div>';
+    });
+  };
+})();
+</script>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --paper: #f6f3ee;
+    --card: #ffffff;
+    --ink: #1b2230;
+    --muted: #677084;
+    --line: #e5e0d7;
+    --navy: #1f3a5f;
+    --navy-soft: #e9eef5;
+    --sel: #1f3a5f;
+    --ok: #2f7a4f;
+    --warn: #b42318;
+    --radius: 14px;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: var(--paper); color: var(--ink);
+    font-family: 'Manrope', system-ui, -apple-system, Segoe UI, sans-serif; font-size: 15px; line-height: 1.5;
+    -webkit-font-smoothing: antialiased; }
+  .wrap { max-width: 1040px; margin: 0 auto; padding: 28px 20px 140px; }
+  .agence { display: flex; align-items: center; gap: 10px; color: var(--muted); font-size: 13px; letter-spacing: .02em; }
+  .agence .pastille { width: 30px; height: 30px; border-radius: 50%; background: var(--navy); color: #fff;
+    display: grid; place-items: center; font-weight: 700; font-size: 12px; letter-spacing: 0; }
+  h1 { font-family: 'Fraunces', Georgia, serif; font-weight: 600; font-size: clamp(26px, 4vw, 36px);
+    line-height: 1.15; margin: 18px 0 6px; letter-spacing: -.01em; }
+  .adresse { color: var(--muted); margin: 0; display: flex; gap: 6px; align-items: center; }
+  .intro { margin: 22px 0 26px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+  .intro div { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px;
+    font-size: 13.5px; color: #3a4252; }
+  .intro b { display: block; font-size: 12px; color: var(--navy); letter-spacing: .04em; text-transform: uppercase; margin-bottom: 2px; }
+
+  .panel { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; }
+  .nav { display: flex; align-items: center; justify-content: space-between; padding: 14px 16px; border-bottom: 1px solid var(--line); }
+  .nav .titre { font-weight: 700; }
+  .nav button { border: 1px solid var(--line); background: #fff; width: 38px; height: 38px; border-radius: 10px;
+    font-size: 18px; cursor: pointer; color: var(--ink); }
+  .nav button:disabled { opacity: .3; cursor: default; }
+
+  .grille { display: grid; grid-template-columns: repeat(6, 1fr); }
+  .col { border-right: 1px solid var(--line); min-width: 0; }
+  .col:last-child { border-right: 0; }
+  .col h3 { margin: 0; padding: 12px 6px 10px; text-align: center; font-size: 13px; font-weight: 600; color: var(--muted);
+    border-bottom: 1px solid var(--line); background: #fbfaf7; position: sticky; top: 0; }
+  .col h3 span { display: block; font-size: 20px; color: var(--ink); font-weight: 700; font-family: 'Fraunces', Georgia, serif; }
+  .col h3.aujourdhui span { color: var(--navy); }
+  .creneaux { padding: 8px; display: flex; flex-direction: column; gap: 6px; }
+  .vide { color: #a3a9b6; font-size: 12.5px; text-align: center; padding: 18px 4px; }
+
+  .slot { border: 1px solid #d5dbe5; background: #fff; color: var(--navy); border-radius: 9px; padding: 8px 0;
+    font: 600 14px 'Manrope', sans-serif; cursor: pointer; transition: background .12s, color .12s, border-color .12s; width: 100%; }
+  .slot:hover { border-color: var(--navy); background: var(--navy-soft); }
+  .slot[aria-pressed="true"] { background: var(--sel); color: #fff; border-color: var(--sel); }
+  .slot:disabled { background: repeating-linear-gradient(135deg, #f4f2ee 0 6px, #efece6 6px 12px);
+    color: #b3b8c2; border-color: transparent; cursor: not-allowed; text-decoration: line-through; font-weight: 500; }
+  .slot:focus-visible, .nav button:focus-visible, .btn:focus-visible { outline: 3px solid #9fb6d6; outline-offset: 2px; }
+
+  /* mobile : un jour à la fois */
+  .jours-mobile { display: none; gap: 8px; overflow-x: auto; padding: 12px 14px; border-bottom: 1px solid var(--line);
+    scrollbar-width: none; }
+  .jours-mobile::-webkit-scrollbar { display: none; }
+  .jour-chip { flex: 0 0 auto; border: 1px solid var(--line); background: #fff; border-radius: 12px; padding: 8px 12px;
+    text-align: center; cursor: pointer; font: 600 12px 'Manrope', sans-serif; color: var(--muted); min-width: 58px; }
+  .jour-chip span { display: block; font-size: 18px; color: var(--ink); font-family: 'Fraunces', Georgia, serif; }
+  .jour-chip[aria-selected="true"] { background: var(--navy); border-color: var(--navy); color: #cfdaea; }
+  .jour-chip[aria-selected="true"] span { color: #fff; }
+  .jour-chip small { display: block; font-weight: 500; font-size: 10.5px; margin-top: 2px; }
+  .jour-chip .pt { display: inline-block; min-width: 16px; height: 16px; border-radius: 8px; background: var(--ok); color: #fff;
+    font-size: 10px; line-height: 16px; margin-top: 3px; padding: 0 4px; }
+  .liste-mobile { display: none; padding: 14px; }
+  .liste-mobile .grid3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .liste-mobile h4 { margin: 0 0 10px; font-size: 14px; }
+
+  @media (max-width: 760px) {
+    .wrap { padding: 20px 16px 170px; }
+    .intro { grid-template-columns: 1fr; gap: 8px; }
+    .grille { display: none; }
+    .jours-mobile { display: flex; }
+    .liste-mobile { display: block; }
+  }
+
+  /* barre de sélection */
+  .barre { position: fixed; left: 0; right: 0; bottom: 0; background: rgba(255,255,255,.96); backdrop-filter: blur(8px);
+    border-top: 1px solid var(--line); box-shadow: 0 -8px 24px rgba(27,34,48,.06); }
+  .barre .in { max-width: 1040px; margin: 0 auto; padding: 12px 20px; display: flex; gap: 14px; align-items: center; }
+  .choix { display: flex; gap: 8px; flex: 1; min-width: 0; flex-wrap: wrap; }
+  .case { flex: 1 1 0; min-width: 120px; border: 1.5px dashed #c9cfda; border-radius: 10px; padding: 7px 10px; font-size: 13px;
+    color: #9aa1ae; display: flex; align-items: center; justify-content: space-between; gap: 6px; }
+  .case.pleine { border-style: solid; border-color: var(--navy); color: var(--ink); background: var(--navy-soft); font-weight: 600; }
+  .case button { border: 0; background: none; font-size: 16px; cursor: pointer; color: var(--muted); padding: 0 2px; line-height: 1; }
+  .btn { border: 0; background: var(--navy); color: #fff; font: 700 15px 'Manrope', sans-serif; padding: 13px 20px;
+    border-radius: 11px; cursor: pointer; white-space: nowrap; }
+  .btn:disabled { background: #b8c2d1; cursor: not-allowed; }
+  .btn.secondaire { background: #fff; color: var(--navy); border: 1px solid var(--line); }
+  .aide { font-size: 12.5px; color: var(--muted); margin-top: 4px; }
+  @media (max-width: 760px) {
+    .barre .in { flex-direction: column; align-items: stretch; padding: 10px 16px 14px; gap: 10px; }
+    .case { min-width: 0; font-size: 12px; padding: 6px 8px; }
+    .btn { width: 100%; }
+  }
+
+  /* formulaire */
+  .form { max-width: 560px; }
+  .recap { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: 16px 18px; margin-bottom: 18px; }
+  .recap ol { margin: 6px 0 0; padding-left: 20px; }
+  .recap li { padding: 2px 0; font-weight: 600; }
+  .recap li::first-letter { text-transform: uppercase; }
+  label { display: block; font-weight: 600; font-size: 13.5px; margin: 14px 0 6px; }
+  label small { font-weight: 400; color: var(--muted); }
+  input, textarea { width: 100%; border: 1px solid #d5dbe5; border-radius: 10px; padding: 12px 13px; font: 500 15px 'Manrope', sans-serif;
+    color: var(--ink); background: #fff; }
+  input:focus, textarea:focus { outline: none; border-color: var(--navy); box-shadow: 0 0 0 3px #dbe4f0; }
+  textarea { min-height: 90px; resize: vertical; }
+  .ligne2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  @media (max-width: 560px) { .ligne2 { grid-template-columns: 1fr; gap: 0; } }
+  .actions { display: flex; gap: 10px; margin-top: 22px; flex-wrap: wrap; }
+  .erreur { background: #fdecea; color: var(--warn); border-radius: 10px; padding: 10px 13px; font-size: 14px; margin-top: 14px; }
+  .lien { background: none; border: 0; color: var(--navy); font: 600 14px 'Manrope', sans-serif; cursor: pointer; padding: 0; text-decoration: underline; }
+
+  .etat { text-align: center; padding: 60px 20px; color: var(--muted); }
+  .spin { width: 28px; height: 28px; border: 3px solid var(--line); border-top-color: var(--navy); border-radius: 50%;
+    animation: t .8s linear infinite; margin: 0 auto 14px; }
+  @keyframes t { to { transform: rotate(360deg); } }
+  .succes { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: 30px 26px; max-width: 560px; }
+  .succes .ok { width: 46px; height: 46px; border-radius: 50%; background: #e3f1e8; color: var(--ok); display: grid; place-items: center;
+    font-size: 24px; margin-bottom: 12px; }
+  .succes h2 { font-family: 'Fraunces', Georgia, serif; margin: 0 0 8px; font-size: 26px; }
+  .contact { margin-top: 30px; font-size: 13.5px; color: var(--muted); }
+  .contact a { color: var(--navy); font-weight: 600; text-decoration: none; }
+  .secoue { animation: s .35s; }
+  @keyframes s { 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } }
+  [hidden] { display: none !important; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="agence"><div class="pastille">NF</div><span id="agence"></span></div>
+  <div id="contenu"></div>
+  <p class="contact" id="contact"></p>
+</div>
+<div class="barre" id="barre" hidden>
+  <div class="in">
+    <div style="flex:1;min-width:0">
+      <div class="choix" id="choix"></div>
+      <div class="aide" id="aide"></div>
+    </div>
+    <button class="btn" id="continuer" disabled>Continuer</button>
+  </div>
+</div>
+
+<script type="text/plain" id="principal">
+var DATA = window.__DATA;
+var C = DATA.config, NB = C.nb;
+var S = { jours: [], semaines: [], semaine: 0, jourMobile: null, sel: [], etape: 'choix', envoi: false };
+var $ = function (id) { return document.getElementById(id); };
+if (DATA.prefill && (DATA.prefill.nom || DATA.prefill.email)) S.form = { nom: DATA.prefill.nom || '', email: DATA.prefill.email || '' };
+
+function esc(s) { return String(s).replace(/[&<>"']/g, function (c) {
+  return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+
+$('agence').textContent = C.agent + ' · ' + C.agence;
+$('contact').innerHTML = 'Une question ? Appelez-moi au <a href="tel:' + C.tel.replace(/\s/g, '') + '">' + esc(C.tel) + '</a>';
+
+function enTete() {
+  return '<h1>' + esc(DATA.bien.titre) + '</h1>' +
+    '<p class="adresse"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s7-6.2 7-12a7 7 0 1 0-14 0c0 5.8 7 12 7 12z"/><circle cx="12" cy="10" r="2.5"/></svg>' +
+    esc(DATA.bien.adresse) + '</p>';
+}
+
+function etat(html) { $('contenu').innerHTML = html; }
+
+function demarrer() {
+  if (!DATA.bien) {
+    etat('<h1>Lien indisponible</h1><p class="adresse">Ce bien n\'est plus proposé à la visite, ou le lien est incomplet.</p>');
+    return;
+  }
+  etat(enTete() + '<div class="etat"><div class="spin"></div>Chargement des disponibilités…</div>');
+  google.script.run
+    .withSuccessHandler(function (jours) { recevoir(jours); })
+    .withFailureHandler(function (e) {
+      etat(enTete() + '<div class="erreur">Impossible de charger les disponibilités. ' + esc(e.message || '') +
+        '</div><div class="actions"><button class="btn" onclick="demarrer()">Réessayer</button></div>');
+    })
+    .getCreneaux(DATA.bien.id);
+}
+
+function recevoir(jours) {
+  S.jours = jours;
+  S.semaines = [];
+  jours.forEach(function (j) { (S.semaines[j.semaine] = S.semaines[j.semaine] || []).push(j); });
+  S.semaines = S.semaines.filter(Boolean);
+  S.semaine = 0;
+  for (var i = 0; i < S.semaines.length; i++) { if (nbLibres(S.semaines[i]) > 0) { S.semaine = i; break; } }
+  choisirJourMobile();
+  rendre();
+}
+
+function nbLibres(jours) {
+  return jours.reduce(function (n, j) { return n + j.creneaux.filter(function (c) { return c.libre; }).length; }, 0);
+}
+function choisirJourMobile() {
+  var sem = S.semaines[S.semaine] || [];
+  S.jourMobile = null;
+  for (var i = 0; i < sem.length; i++) {
+    if (sem[i].creneaux.some(function (c) { return c.libre; })) { S.jourMobile = sem[i].date; break; }
+  }
+  if (!S.jourMobile && sem.length) S.jourMobile = sem[0].date;
+}
+
+function trouver(t) {
+  for (var i = 0; i < S.jours.length; i++) for (var k = 0; k < S.jours[i].creneaux.length; k++) {
+    if (S.jours[i].creneaux[k].t === t) return { jour: S.jours[i], c: S.jours[i].creneaux[k] };
+  }
+  return null;
+}
+function libelle(t) { var x = trouver(t); return x ? x.jour.libelle + ' à ' + x.c.h : ''; }
+function libelleCourt(t) { var x = trouver(t); return x ? x.jour.court + ' ' + x.jour.num + ' · ' + x.c.h : ''; }
+
+function boutonSlot(c) {
+  var pris = S.sel.indexOf(c.t) >= 0;
+  return '<button class="slot" data-t="' + c.t + '" aria-pressed="' + pris + '"' + (c.libre ? '' : ' disabled aria-label="' + c.h + ' indisponible"') + '>' + c.h + '</button>';
+}
+
+function rendre() {
+  if (S.etape === 'form') return rendreForm();
+  var sem = S.semaines[S.semaine] || [];
+  var aujd = new Date(); var auj = aujd.getFullYear() + '-' + ('0' + (aujd.getMonth() + 1)).slice(-2) + '-' + ('0' + aujd.getDate()).slice(-2);
+  var titre = sem.length ? 'Semaine du ' + sem[0].num + ' ' + sem[0].mois + ' au ' + sem[sem.length - 1].num + ' ' + sem[sem.length - 1].mois : '';
+
+  var cols = sem.map(function (j) {
+    var libres = j.creneaux.some(function (c) { return c.libre; });
+    return '<div class="col"><h3 class="' + (j.date === auj ? 'aujourdhui' : '') + '">' + j.court + '<span>' + j.num + '</span></h3>' +
+      '<div class="creneaux">' + (libres ? j.creneaux.filter(function (c) { return !c.passe; }).map(boutonSlot).join('') : '<div class="vide">Aucun créneau</div>') + '</div></div>';
+  }).join('');
+
+  var chips = sem.map(function (j) {
+    var n = j.creneaux.filter(function (c) { return c.libre; }).length;
+    var nSel = j.creneaux.filter(function (c) { return S.sel.indexOf(c.t) >= 0; }).length;
+    return '<button class="jour-chip" role="tab" data-jour="' + j.date + '" aria-selected="' + (j.date === S.jourMobile) + '">' +
+      j.court + '<span>' + j.num + '</span><small>' + (nSel ? '<i class="pt">' + nSel + '</i>' : (n ? n + ' libres' : 'complet')) + '</small></button>';
+  }).join('');
+  var jm = sem.filter(function (j) { return j.date === S.jourMobile; })[0];
+  var listeM = jm ? '<h4>' + jm.libelle.charAt(0).toUpperCase() + jm.libelle.slice(1) + '</h4>' +
+    (jm.creneaux.some(function (c) { return c.libre; }) ? '<div class="grid3">' + jm.creneaux.filter(function (c) { return c.libre; }).map(boutonSlot).join('') + '</div>'
+      : '<div class="vide">Aucun créneau disponible ce jour-là</div>') : '';
+
+  etat(enTete() +
+    '<div class="intro">' +
+    '<div><b>1. Choisissez</b>' + NB + ' créneaux qui vous conviennent</div>' +
+    '<div><b>2. Envoyez</b>vos coordonnées en quelques secondes</div>' +
+    '<div><b>3. Recevez</b>la confirmation dans votre agenda</div></div>' +
+    '<div class="panel">' +
+    '<div class="nav"><button id="prec" aria-label="Semaine précédente"' + (S.semaine === 0 ? ' disabled' : '') + '>‹</button>' +
+    '<span class="titre">' + titre + '</span>' +
+    '<button id="suiv" aria-label="Semaine suivante"' + (S.semaine >= S.semaines.length - 1 ? ' disabled' : '') + '>›</button></div>' +
+    '<div class="grille">' + cols + '</div>' +
+    '<div class="jours-mobile" role="tablist">' + chips + '</div>' +
+    '<div class="liste-mobile">' + listeM + '</div>' +
+    '</div>');
+  rendreBarre();
+}
+
+function rendreBarre() {
+  $('barre').hidden = S.etape !== 'choix';
+  var html = '';
+  for (var i = 0; i < NB; i++) {
+    var t = S.sel[i];
+    html += t ? '<div class="case pleine"><span>' + libelleCourt(t) + '</span><button data-retirer="' + t + '" aria-label="Retirer">×</button></div>'
+      : '<div class="case">Créneau ' + (i + 1) + '</div>';
+  }
+  $('choix').innerHTML = html;
+  var reste = NB - S.sel.length;
+  $('aide').textContent = reste > 0 ? 'Encore ' + reste + ' créneau' + (reste > 1 ? 'x' : '') + ' à choisir (' + NB + ' obligatoires)' : 'Parfait, vos ' + NB + ' créneaux sont choisis.';
+  $('continuer').disabled = S.sel.length !== NB;
+}
+
+function basculer(t) {
+  var i = S.sel.indexOf(t);
+  if (i >= 0) S.sel.splice(i, 1);
+  else if (S.sel.length >= NB) {
+    var b = $('choix'); b.classList.remove('secoue'); void b.offsetWidth; b.classList.add('secoue');
+    $('aide').textContent = 'Vous avez déjà choisi ' + NB + ' créneaux. Retirez-en un pour en choisir un autre.';
+    return;
+  } else S.sel.push(t);
+  S.sel.sort(function (a, b) { return a - b; });
+  rendre();
+}
+
+function rendreForm(erreur) {
+  $('barre').hidden = true;
+  var v = S.form || {};
+  etat(enTete() + '<div class="form" style="margin-top:24px">' +
+    '<div class="recap"><b>Vos ' + NB + ' créneaux proposés</b><ol>' +
+    S.sel.map(function (t) { return '<li>' + esc(libelle(t)) + '</li>'; }).join('') + '</ol>' +
+    '<p style="margin:10px 0 0"><button class="lien" id="modifier">Modifier mes créneaux</button></p></div>' +
+    '<form id="f" novalidate>' +
+    '<label for="nom">Nom et prénom</label><input id="nom" autocomplete="name" required value="' + esc(v.nom || '') + '">' +
+    '<div class="ligne2"><div><label for="tel">Téléphone</label><input id="tel" type="tel" autocomplete="tel" inputmode="tel" required value="' + esc(v.tel || '') + '"></div>' +
+    '<div><label for="email">Email <small>(pour recevoir l\'invitation)</small></label><input id="email" type="email" autocomplete="email" required value="' + esc(v.email || '') + '"></div></div>' +
+    '<label for="message">Message <small>(facultatif)</small></label><textarea id="message" placeholder="Projet, financement, nombre de personnes présentes…">' + esc(v.message || '') + '</textarea>' +
+    (erreur ? '<div class="erreur">' + esc(erreur) + '</div>' : '') +
+    '<div class="actions"><button class="btn" type="submit" id="envoyer"' + (S.envoi ? ' disabled' : '') + '>' + (S.envoi ? 'Envoi en cours…' : 'Envoyer ma demande') + '</button></div>' +
+    '</form></div>');
+  $('modifier').onclick = function () { lireForm(); S.etape = 'choix'; rendre(); };
+  $('f').onsubmit = function (e) { e.preventDefault(); envoyer(); };
+}
+
+function lireForm() {
+  S.form = { nom: $('nom').value.trim(), tel: $('tel').value.trim(), email: $('email').value.trim(), message: $('message').value.trim() };
+  return S.form;
+}
+
+function envoyer() {
+  if (S.envoi) return;
+  var f = lireForm();
+  if (!f.nom) return rendreForm('Merci d\'indiquer votre nom.');
+  if (f.tel.replace(/\D/g, '').length < 9) return rendreForm('Merci d\'indiquer un numéro de téléphone valide.');
+  if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(f.email)) return rendreForm('Merci d\'indiquer une adresse email valide.');
+  if (S.sel.length !== NB) { S.etape = 'choix'; return rendre(); }
+  S.envoi = true; rendreForm();
+  google.script.run
+    .withSuccessHandler(function (r) {
+      S.envoi = false; S.etape = 'fini';
+      etat(enTete() + '<div class="succes" style="margin-top:24px"><div class="ok">✓</div><h2>Demande envoyée</h2>' +
+        '<p>Merci ' + esc(f.nom.split(' ')[0]) + ', j\'ai bien reçu vos ' + NB + ' créneaux :</p><ol>' +
+        r.creneaux.map(function (l) { return '<li>' + esc(l) + '</li>'; }).join('') + '</ol>' +
+        '<p>Je vous confirme la visite très rapidement. Vous recevrez une invitation à ajouter à votre agenda à l\'adresse <b>' + esc(f.email) + '</b>.</p></div>');
+    })
+    .withFailureHandler(function (e) {
+      S.envoi = false;
+      rendreForm((e && e.message) || 'L\'envoi a échoué. Merci de réessayer.');
+    })
+    .soumettreDemande({ bien: DATA.bien.id, nom: f.nom, tel: f.tel, email: f.email, message: f.message, creneaux: S.sel });
+}
+
+document.addEventListener('click', function (e) {
+  var el = e.target.closest('button'); if (!el) return;
+  if (el.dataset.t) return basculer(Number(el.dataset.t));
+  if (el.dataset.retirer) return basculer(Number(el.dataset.retirer));
+  if (el.dataset.jour) { S.jourMobile = el.dataset.jour; return rendre(); }
+  if (el.id === 'prec' && S.semaine > 0) { S.semaine--; choisirJourMobile(); return rendre(); }
+  if (el.id === 'suiv' && S.semaine < S.semaines.length - 1) { S.semaine++; choisirJourMobile(); return rendre(); }
+  if (el.id === 'continuer' && S.sel.length === NB) { S.etape = 'form'; rendre(); window.scrollTo(0, 0); }
+});
+
+demarrer();
+</script>
+<script>var q = new URLSearchParams(location.search);__demarrer('pageClient', [q.get('bien'), q.get('nom'), q.get('email')], function (d) { if (d.bien) document.title = 'Visite · ' + d.bien.titre; });</script>
+</body>
+</html>

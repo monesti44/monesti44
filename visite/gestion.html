@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<title>Demande de visite</title>
+<meta name="robots" content="noindex">
+<script>
+(function () {
+  var API = 'https://script.google.com/macros/s/AKfycbxZRkfwG6fKvO_TV-4JiArG7b7LxuQHa08Jj2iq_UFFXxYnN5cvUNG-98GkEqZhfnO10A/exec';
+  function appel(fn, args) {
+    return fetch(API, { method: 'POST', credentials: 'omit', redirect: 'follow',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ fn: fn, args: args }) })
+      .then(function (r) { if (!r.ok) throw new Error('Serveur indisponible (' + r.status + ')'); return r.json(); })
+      .then(function (j) { if (!j.ok) throw new Error(j.error || 'Erreur'); return j.r; });
+  }
+  function Run(ok, ko) { this.ok = ok; this.ko = ko; }
+  function fabrique(ok, ko) {
+    return new Proxy(new Run(ok, ko), { get: function (t, nom) {
+      if (nom === 'withSuccessHandler') return function (f) { return fabrique(f, t.ko); };
+      if (nom === 'withFailureHandler') return function (f) { return fabrique(t.ok, f); };
+      return function () {
+        var args = Array.prototype.slice.call(arguments);
+        appel(nom, args).then(function (r) { t.ok && t.ok(r); }, function (e) { t.ko ? t.ko(e) : console.error(e); });
+      };
+    } });
+  }
+  window.google = { script: { run: fabrique(null, null) } };
+  window.__appel = appel;
+  window.__demarrer = function (fn, args, apres) {
+    appel(fn, args).then(function (data) {
+      window.__DATA = data;
+      if (apres) apres(data);
+      var s = document.createElement('script');
+      s.textContent = document.getElementById('principal').textContent;
+      document.body.appendChild(s);
+    }, function (e) {
+      document.body.innerHTML = '<div style="font:15px Arial,sans-serif;max-width:520px;margin:60px auto;padding:0 16px;color:#1b2230">' +
+        '<h2>Connexion impossible</h2><p>' + String(e.message || e).replace(/</g, '&lt;') + '</p><p><button onclick="location.reload()" style="padding:10px 16px;border-radius:8px;border:0;background:#1f3a5f;color:#fff;font-weight:bold;cursor:pointer">Réessayer</button></p></div>';
+    });
+  };
+})();
+</script>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root { --paper:#f6f3ee; --ink:#1b2230; --muted:#677084; --line:#e5e0d7; --navy:#1f3a5f; --ok:#2f7a4f; --warn:#b42318; }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--paper); color:var(--ink); font:15px/1.5 'Manrope', system-ui, sans-serif; }
+  .wrap { max-width:560px; margin:0 auto; padding:28px 16px 60px; }
+  .tag { font-size:12px; letter-spacing:.06em; text-transform:uppercase; color:var(--muted); font-weight:700; }
+  h1 { font-family:'Fraunces', Georgia, serif; font-size:28px; line-height:1.15; margin:8px 0 4px; }
+  .muted { color:var(--muted); margin:0; }
+  .card { background:#fff; border:1px solid var(--line); border-radius:14px; padding:16px 18px; margin-top:18px; }
+  .card b { display:block; }
+  .card a { color:var(--navy); font-weight:600; text-decoration:none; }
+  .slots { display:flex; flex-direction:column; gap:8px; margin-top:8px; }
+  .opt { display:flex; align-items:center; gap:10px; border:1.5px solid var(--line); border-radius:11px; padding:11px 13px; cursor:pointer; background:#fff; font:600 15px 'Manrope', sans-serif; text-align:left; color:var(--ink); }
+  .opt[aria-pressed="true"] { border-color:var(--ok); background:#eef7f1; }
+  .opt:disabled { opacity:.45; cursor:not-allowed; }
+  .opt .rond { width:18px; height:18px; border-radius:50%; border:2px solid #c3c9d4; flex:0 0 auto; }
+  .opt[aria-pressed="true"] .rond { border:5px solid var(--ok); }
+  .opt::first-letter { text-transform:uppercase; }
+  .btn { display:block; width:100%; border:0; border-radius:11px; padding:14px; font:700 15px 'Manrope', sans-serif; color:#fff; background:var(--ok); cursor:pointer; margin-top:18px; }
+  .btn.rouge { background:var(--warn); }
+  .btn.gris { background:#fff; color:var(--navy); border:1px solid var(--line); }
+  .btn:disabled { opacity:.6; cursor:default; }
+  textarea { width:100%; min-height:110px; border:1px solid #d5dbe5; border-radius:10px; padding:12px; font:500 15px 'Manrope', sans-serif; margin-top:8px; }
+  .alerte { border-radius:11px; padding:12px 14px; margin-top:16px; font-size:14.5px; }
+  .alerte.err { background:#fdecea; color:var(--warn); }
+  .alerte.ok { background:#e8f4ec; color:#1f5b39; }
+  .gros { text-align:center; padding:30px 10px 10px; }
+  .gros .ic { width:56px; height:56px; border-radius:50%; display:grid; place-items:center; margin:0 auto 12px; font-size:28px; background:#e3f1e8; color:var(--ok); }
+  .lien { background:none; border:0; color:var(--navy); text-decoration:underline; font:600 14px 'Manrope', sans-serif; cursor:pointer; padding:0; margin-top:14px; }
+</style>
+</head>
+<body>
+<div class="wrap" id="app"></div>
+<script type="text/plain" id="principal">
+var D = window.__DATA;
+var app = document.getElementById('app');
+var choix = D.c || 0, occupe = false;
+function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]; }); }
+function maj(s) { s = String(s); return s.charAt(0).toUpperCase() + s.slice(1); }
+
+function fiche() {
+  return '<div class="card"><b>' + esc(D.nom) + '</b>' +
+    '<a href="tel:' + esc(String(D.tel).replace(/\s/g, '')) + '">' + esc(D.tel) + '</a> · <a href="mailto:' + esc(D.email) + '">' + esc(D.email) + '</a>' +
+    (D.message ? '<p class="muted" style="margin-top:8px">« ' + esc(D.message) + ' »</p>' : '') + '</div>';
+}
+
+function rendre(alerte) {
+  if (D.erreur) { app.innerHTML = '<h1>Lien invalide</h1><p class="muted">' + esc(D.erreur) + '</p>'; return; }
+  var tete = '<div class="tag">Demande de visite n° ' + esc(D.id) + '</div><h1>' + esc(D.bien) + '</h1><p class="muted">' + esc(D.adresse) + '</p>';
+  if (D.statut !== 'En attente') {
+    app.innerHTML = tete + fiche() + '<div class="alerte ok">Cette demande est déjà traitée : <b>' + esc(D.statut) + '</b>' +
+      (D.retenu ? ' pour le ' + esc(D.retenu) : '') + '.</div>';
+    return;
+  }
+  if (D.action === 'refuser') {
+    app.innerHTML = tete + fiche() +
+      '<div class="card"><b>Aucun créneau ne convient</b><p class="muted">Le client recevra un mail avec un lien pour proposer d\'autres créneaux. Tu peux ajouter un mot :</p>' +
+      '<textarea id="motif" placeholder="Ex. : je suis disponible plutôt en fin de semaine prochaine."></textarea></div>' +
+      (alerte ? '<div class="alerte err">' + esc(alerte) + '</div>' : '') +
+      '<button class="btn rouge" id="go">Envoyer la réponse au client</button>' +
+      '<button class="lien" id="versValider">Finalement, valider un créneau</button>';
+    document.getElementById('go').onclick = refuser;
+    document.getElementById('versValider').onclick = function () { D.action = 'valider'; rendre(); };
+    return;
+  }
+  app.innerHTML = tete + fiche() +
+    '<div class="card"><b>Créneau retenu</b><div class="slots">' +
+    D.creneaux.map(function (c) {
+      return '<button class="opt" data-i="' + c.i + '" aria-pressed="' + (c.i === choix) + '"' + (c.passe ? ' disabled' : '') + '><span class="rond"></span>' + esc(maj(c.label)) + (c.passe ? ' (passé)' : '') + '</button>';
+    }).join('') + '</div></div>' +
+    (alerte ? '<div class="alerte err">' + esc(alerte) + '</div>' : '') +
+    '<button class="btn" id="go">' + (occupe ? 'Confirmer quand même' : 'Confirmer et envoyer l\'invitation') + '</button>' +
+    '<button class="lien" id="versRefus">Aucun ne convient</button>';
+  Array.prototype.forEach.call(document.querySelectorAll('.opt'), function (b) {
+    b.onclick = function () { choix = Number(b.dataset.i); occupe = false; rendre(); };
+  });
+  document.getElementById('go').onclick = valider;
+  document.getElementById('versRefus').onclick = function () { D.action = 'refuser'; rendre(); };
+}
+
+function attente(txt) { var b = document.getElementById('go'); b.disabled = true; b.textContent = txt; }
+
+function valider() {
+  attente('Création du rendez-vous…');
+  google.script.run.withSuccessHandler(function (r) {
+    if (r.ok) {
+      app.innerHTML = '<div class="gros"><div class="ic">✓</div><h1>Visite confirmée</h1><p class="muted">' + esc(maj(r.label)) +
+        '<br>Le rendez-vous est dans ton agenda et l\'invitation est partie à ' + esc(r.email) + '.</p></div>';
+    } else { occupe = !!r.conflit; rendre(r.msg); }
+  }).withFailureHandler(function (e) { rendre(e.message); })
+    .confirmerVisite(D.id, choix, D.t, occupe);
+}
+
+function refuser() {
+  var motif = document.getElementById('motif').value;
+  attente('Envoi…');
+  google.script.run.withSuccessHandler(function (r) {
+    if (r.ok) app.innerHTML = '<div class="gros"><div class="ic" style="background:#eef1f6;color:#1f3a5f">✉</div><h1>Réponse envoyée</h1><p class="muted">' + esc(D.nom) + ' a reçu un lien pour proposer d\'autres créneaux.</p></div>';
+    else rendre(r.msg);
+  }).withFailureHandler(function (e) { rendre(e.message); })
+    .refuserDemande(D.id, D.t, motif);
+}
+rendre();
+</script>
+<script>var q = new URLSearchParams(location.search);__demarrer('gestionData', [q.get('action'), q.get('id'), q.get('c'), q.get('t')]);</script>
+</body>
+</html>
