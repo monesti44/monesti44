@@ -249,11 +249,11 @@ body{padding-bottom:calc(48px + var(--tb, 0px))}
     <div class="row between"><div class="formats" id="formats"></div></div>
     <button class="btn" id="remix" title="Nouveau tirage des mouvements et transitions">Remixer les mouvements et transitions</button>
     <div class="export">
-      <div class="row2"><button class="btn pri big" id="exportBtn">Créer la vidéo</button><button class="btn" id="exportAll" title="9:16, 4:5 et 1:1">Les 3 formats</button></div>
+      <div class="row2"><button class="btn pri big" id="exportBtn">Créer la vidéo</button><button class="btn" id="exportAll" title="9:16, 4:5 et 1:1, avec couvertures et texte">Les 3 formats</button></div>
       <div id="progWrap" hidden><div class="bar"><i id="prog"></i></div><p class="note" id="progTxt" style="margin-top:6px">Préparation…</p></div>
       <div class="result" id="result" hidden>
         <video id="outVideo" controls playsinline></video>
-        <div class="row between" style="margin-top:8px"><span class="note mono" id="outInfo"></span><span class="row"><button class="btn" id="openBtn" hidden>Ouvrir le dossier</button><button class="btn pri" id="saveBtn">Enregistrer la vidéo</button></span></div>
+        <div class="row between" style="margin-top:8px"><span class="note mono" id="outInfo"></span><span class="row"><button class="btn" id="openBtn" hidden>Ouvrir le dossier</button><button class="btn pri" id="saveBtn">Enregistrer vidéo, texte et couverture</button></span></div>
         <p class="note" id="saveMsg" style="margin-top:6px"></p>
       </div>
       <div class="row between"><p class="note" id="exportNote"></p><button class="btn small" id="coverBtn">Image de couverture</button></div>
@@ -3505,7 +3505,7 @@ async function mixdown(sr){
 
 /* ---------- Export ---------- */
 const dlPromise = (!IS_APP && window.claude && window.claude.use) ? window.claude.use("downloads").catch(() => null) : Promise.resolve(null);
-let outBlob = null, outExt = "mp4", lastSavedPath = "";
+let outBlob = null, outExt = "mp4", lastSavedPath = "", outCover = null, outFmt = "9:16";
 function progress(p, txt){ $("progWrap").hidden = false; $("prog").style.width = (p * 100).toFixed(1) + "%"; if (txt) $("progTxt").textContent = txt; }
 function lockUI(on){ exporting = on && !recording ? exporting : exporting; $("exportBtn").disabled = on; $("exportAll").disabled = on; $("play").disabled = on; $("scrub").disabled = on; document.querySelectorAll(".steps input,.steps select,.steps button,.fmt,#proposeBtn").forEach(e => e.disabled = on); }
 async function pickVideoConfig(W, H){
@@ -3578,15 +3578,16 @@ async function runExport(all){
     for (const f of formats){
       S.format = f; renderFormats(); sizeCanvas(.5); buildTimeline();
       $("progTxt").textContent = `Format ${f}…`;
-      const blob = await makeVideo(); outBlob = blob;
-      const name = `Visite-${fileBase()}-${f.replace(":", "x")}.${outExt}`;
-      if (all){ const r = await saveBlob(blob, name, folder); if (r) saved.push(r); }
+      const blob = await makeVideo(); outBlob = blob; outFmt = f;
+      outCover = await endCoverBlob();
+      if (all){ const r = await savePack(blob, outCover, f, folder, false); saved.push(...r); }
     }
+    if (all){ const t = await saveBlob(textBlob(), `Visite-${fileBase()}-texte.txt`, folder); if (t) saved.push(t); }
     S.format = keep; renderFormats(); sizeCanvas(.5); refreshAll();
     $("progWrap").hidden = true; $("result").hidden = false;
     const v = $("outVideo"); if (v.src) URL.revokeObjectURL(v.src); v.src = URL.createObjectURL(outBlob);
     const F = FORMATS[S.format]; $("outInfo").textContent = `${outExt.toUpperCase()} · ${F.w}×${F.h} · ${fmtT(TL.total)} · ${(outBlob.size / 1048576).toFixed(1)} Mo`;
-    $("saveMsg").textContent = all ? (saved.length ? `${saved.length} vidéos enregistrées.` : "") : (outExt === "webm" ? "Fichier WebM : Instagram préfère le MP4. Utilisez l'application PC ou Chrome récent." : "");
+    $("saveMsg").textContent = all ? (saved.length ? `${saved.length} fichiers enregistrés : les 3 vidéos, leurs couvertures de fin avec le prix et le texte de publication.` : "") : (outExt === "webm" ? "Fichier WebM : Instagram préfère le MP4. Utilisez l'application PC ou Chrome récent." : "");
     $("openBtn").hidden = !(IS_APP && all && saved.length);
   } catch (e) { console.error(e); $("progTxt").textContent = "La création a échoué : " + (e && e.message || e); }
   lockUI(false);
@@ -3603,7 +3604,7 @@ async function saveBlob(blob, name, folder){
     try {
       let fh;
       if (folder && folder.getFileHandle) fh = await folder.getFileHandle(name, { create:true });
-      else { const ext = name.split(".").pop(); fh = await window.showSaveFilePicker({ suggestedName:name, startIn:ext === "mp4" ? "videos" : "pictures", types:[{ description:ext.toUpperCase(), accept:{ [ext === "mp4" ? "video/mp4" : ext === "webm" ? "video/webm" : ext === "jpg" ? "image/jpeg" : "application/octet-stream"]:["." + ext] } }] }); }
+      else { const ext = name.split(".").pop(); fh = await window.showSaveFilePicker({ suggestedName:name, startIn:ext === "mp4" ? "videos" : "pictures", types:[{ description:ext.toUpperCase(), accept:{ [ext === "mp4" ? "video/mp4" : ext === "webm" ? "video/webm" : ext === "jpg" ? "image/jpeg" : ext === "txt" ? "text/plain" : "application/octet-stream"]:["." + ext] } }] }); }
       const w = await fh.createWritable(); await w.write(blob); await w.close(); return fh.name || name;
     } catch (e) { if (e && e.name === "AbortError") return null; }
   }
@@ -3611,7 +3612,25 @@ async function saveBlob(blob, name, folder){
   if (dl){ try { await dl.save({ filename:name, data:blob }); return name; } catch (e) { if (e && e.code === "declined") return null; } }
   try { const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = name; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 4000); return name; } catch (e) { return null; }
 }
-async function saveVideo(){ if (!outBlob) return; const name = `Visite-${fileBase()}-${S.format.replace(":", "x")}.${outExt}`; const r = await saveBlob(outBlob, name); $("saveMsg").textContent = r ? (IS_APP ? `Enregistrée : ${r}` : "Vidéo enregistrée.") : "Enregistrement annulé. Clic droit sur la vidéo puis « Enregistrer la vidéo sous… » fonctionne aussi."; $("openBtn").hidden = !(IS_APP && r); }
+async function frameBlob(t){ const keep = Q; sizeCanvas(1); render(t); const blob = await new Promise(r => cv.toBlob(r, "image/jpeg", .92)); sizeCanvas(keep); markDirty(); return blob; }
+async function endCoverBlob(){ const o = TL.segs[TL.segs.length - 1]; if (!o) return null; return frameBlob(o.start + Math.max(.1, o.dur - .12)); }
+function textBlob(){ return new Blob(["\ufeff" + ($("caption").value || buildCaption()).replace(/\n/g, "\r\n")], { type:"text/plain" }); }
+async function pickFolder(){ if (!(IS_LOCAL && window.showDirectoryPicker)) return null; try { return await window.showDirectoryPicker({ id:"svi-export", mode:"readwrite", startIn:"videos" }); } catch (e) { return e && e.name === "AbortError" ? false : null; } }
+async function savePack(video, cover, f, folder, withText){
+  const base = `Visite-${fileBase()}-${f.replace(":", "x")}`, out = [];
+  const v = await saveBlob(video, `${base}.${outExt}`, folder); if (v) out.push(v);
+  if (cover){ const c = await saveBlob(cover, `${base}-couverture-fin.jpg`, folder); if (c) out.push(c); }
+  if (withText){ const t = await saveBlob(textBlob(), `Visite-${fileBase()}-texte.txt`, folder); if (t) out.push(t); }
+  return out;
+}
+async function saveVideo(){
+  if (!outBlob) return; const msg = $("saveMsg");
+  const folder = await pickFolder(); if (folder === false){ msg.textContent = "Enregistrement annulé."; return; }
+  msg.textContent = "Enregistrement…";
+  const r = await savePack(outBlob, outCover, outFmt, folder, true);
+  msg.textContent = r.length >= 3 ? `Enregistrés${folder ? " dans « " + folder.name + " »" : ""} : la vidéo, la couverture de fin avec le prix et le texte de publication.` : r.length ? `${r.length} fichier(s) enregistré(s) sur 3.` : "Enregistrement annulé. Clic droit sur la vidéo puis « Enregistrer la vidéo sous… » fonctionne aussi.";
+  $("openBtn").hidden = true;
+}
 async function saveCover(){
   const keep = Q; sizeCanvas(1); const t = Math.min(TL.intro * .55, TL.total * .5); render(t);
   const blob = await new Promise(r => cv.toBlob(r, "image/jpeg", .92)); sizeCanvas(keep); markDirty();
@@ -3927,6 +3946,6 @@ if (IS_WEBAPP){
   window.addEventListener("appinstalled", () => { b.hidden = true; deferred = null; });
   b.onclick = async () => { if (!deferred) return; deferred.prompt(); try { await deferred.userChoice; } catch (e) {} deferred = null; b.hidden = true; };
 }
-window.__studio = { S, bank:() => S.bank, render, TL:() => TL, seekTo, propose, Music, Staging, exportFast:() => exportFast(), buildTimeline, sizeCanvas };
+window.__studio = { savePack, endCoverBlob, textBlob, S, bank:() => S.bank, render, TL:() => TL, seekTo, propose, Music, Staging, exportFast:() => exportFast(), buildTimeline, sizeCanvas };
 })();
 </script></body></html>
